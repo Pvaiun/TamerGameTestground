@@ -10,7 +10,6 @@ import {
   renderRecords, renderTend, renderVictory, renderGameover,
 } from './screens.js';
 
-// Main dispatcher.
 export function render() {
   const root = app();
   root.innerHTML = '';
@@ -38,16 +37,43 @@ export function render() {
   }
 }
 
-// Wave-advance — used after path picker / breed ritual completes.
-// Generates the appropriate enemy party for the room kind and routes to prebattle.
+// Advance to the next descent. Generates content based on `state.pendingRoomKind`:
+//   - 'battle' → enemy party, screen = 'prebattle'
+//   - 'elite'  → elite enemy pair, screen = 'prebattle'
+//   - 'records'→ relic candidates,  screen = 'records'
+//   - 'tend'   → tend state,        screen = 'tend'
+//   - 'boss'   → boss party,        screen = 'prebattle'
+// Every path increments state.wave by 1.
 export function advanceWave() {
   state.wave++;
   if (state.wave > TOTAL_WAVES) { state.screen = 'victory'; render(); return; }
   const partyLvl = partyAvgLevel(state.party);
+  const kind = state.pendingRoomKind || 'battle';
+
   if (state.wave === TOTAL_WAVES) {
     state.enemyParty = generateBossParty(partyLvl);
     state.isEliteBattle = true;
-  } else if (state.pendingRoomKind === 'elite') {
+    state.prebattleSelection = null;
+    state.prebattleLead = false;
+    state.screen = 'prebattle';
+    for (const c of state.party) c.maxHp = c.stats.hp;
+    render();
+    return;
+  }
+
+  if (kind === 'records') {
+    state.recordsCandidates = null;
+    state.screen = 'records';
+    render();
+    return;
+  }
+  if (kind === 'tend') {
+    state.tendState = null;
+    state.screen = 'tend';
+    render();
+    return;
+  }
+  if (kind === 'elite') {
     state.enemyParty = generateElitePair(state.wave, partyLvl);
     state.isEliteBattle = true;
   } else {
@@ -56,29 +82,33 @@ export function advanceWave() {
   }
   state.enemyActiveIdx = 0;
   state.enemy = state.enemyParty[0];
-  for (const c of state.party) c.maxHp = c.stats.hp;
   state.prebattleSelection = null;
   state.prebattleLead = false;
   state.screen = 'prebattle';
+  for (const c of state.party) c.maxHp = c.stats.hp;
   render();
 }
 
-// Routes from aftermath into the appropriate next screen:
-//   - End of wave 10: victory (handled in finishBattleIfDone)
-//   - Just finished a breed wave (3/6/9): offer the ritual
-//   - Otherwise: path picker
+// Routes from aftermath into the appropriate next screen.
 export function routeAfterAftermath() {
+  return proceedFromDepth();
+}
+
+// Called from any "depth-completing" event (battle aftermath, records pick,
+// tend pick). Decides whether breed_offer fires, the next path picker shows,
+// or we go straight to the boss room.
+export function proceedFromDepth() {
   if (BREED_WAVES.has(state.wave) && (state.party.length + state.reserve.length) >= 2) {
     state.screen = 'breed_offer';
     render();
     return;
   }
-  // Path screen if the next wave isn't the boss directly.
-  if (state.wave + 1 >= TOTAL_WAVES) {
+  if (state.wave >= TOTAL_WAVES - 1) {
     state.pendingRoomKind = 'boss';
     advanceWave();
     return;
   }
+  state.pathChoices = null;
   state.screen = 'path';
   render();
 }

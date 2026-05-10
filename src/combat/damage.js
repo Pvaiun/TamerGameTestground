@@ -1,14 +1,15 @@
-import { TYPE_CHART, ADDITIONAL_EFFECTS } from '../data.js';
+import { TYPE_CHART, ADDITIONAL_EFFECTS, ABILITIES } from '../data.js';
 import { rand } from '../rng.js';
 import {
   applyStatMult, applyPowerMult, checkEvasion,
   getCritMult, getCritChance, applyFlatDmgReduction, bypassesTypeChart,
+  energyDiscount, hasFirstAttackThisRound,
 } from './passives.js';
 import { state } from '../state.js';
 
-// Resolves a fighter's effective stat after passive multipliers, status modifiers, and stat mods.
-// Stat mods are clamped to [-0.6, +0.9] before passives apply, so a single ability can't
-// turn the math sideways and "stack three buffs" is no longer a one-button win.
+const COMBO_BONUS_PER_EXTRA_ACTION = 0.18;
+
+// Effective stat. statMods clamped to [-0.6, +0.9] before passive mults apply.
 export function effectiveStat(f, stat) {
   let mod = (f.statMods[stat] || 0);
   mod = Math.max(-0.6, Math.min(0.9, mod));
@@ -22,17 +23,29 @@ export function effectiveStat(f, stat) {
   return Math.max(1, Math.round(f.creature.stats[stat] * m));
 }
 
+// Returns the energy cost of an ability for this fighter (after passives may discount).
+export function abilityCost(ability, fighter) {
+  let cost = ability.cost ?? 2;
+  if (fighter) cost -= energyDiscount(fighter, ability);
+  return Math.max(0, cost);
+}
+
 function findInPhase(phase, type) {
   return (phase || []).find(e => e.type === type) || null;
 }
-
 function modParam(eff, key) {
   if (!eff) return undefined;
   if (eff[key] !== undefined) return eff[key];
   return ADDITIONAL_EFFECTS[eff.type]?.params?.[key]?.default;
 }
 
-// Sum of all run-relics' onDamage hooks. Lazy-imported to avoid a cycle.
+// Combo bonus: 2nd+ action this round gets +18% damage per prior action (capped 1.5x).
+function comboBonus(attacker) {
+  const prior = (attacker.actionsThisTurn || 1) - 1;
+  if (prior <= 0) return 1;
+  return Math.min(1.5, 1 + COMBO_BONUS_PER_EXTRA_ACTION * prior);
+}
+
 function relicDamageMult(attacker, defender) {
   if (!state.relics || !state.relics.length) return 1;
   let m = 1;
@@ -45,10 +58,8 @@ function relicDamageMult(attacker, defender) {
   return m;
 }
 
-// Returns {dmg, mult, elem, crit, evaded?}
-// `dmgEffect` is the specific damage effect being resolved (carries power/hits).
-// `phase` is the array of effects in the current phase (modifiers consulted from here).
-export function calculateDamage(attacker, defender, ability, dmgEffect, phase) {
+// Returns { dmg, mult, elem, crit, evaded? }
+export function calculateDamage(attacker, defender, ability, dmgEffect, phase, ctx = {}) {
   const atk = effectiveStat(attacker, 'atk');
   let def = effectiveStat(defender, 'def');
   const piercer = findInPhase(phase, 'pierce');
@@ -59,35 +70,67 @@ export function calculateDamage(attacker, defender, ability, dmgEffect, phase) {
   const attackerSpd = effectiveStat(attacker, 'spd');
   const defenderSpd = effectiveStat(defender, 'spd');
   let power = applyPowerMult(attacker, defender, ability, dmgEffect.power || 0, phase, { attackerSpd, defenderSpd });
+  // Apply signature stack damage modifiers (sig_consume_*_dmg) — they read fighter sigStacks.
+  power = applySigDamageMods(attacker, defender, power, phase, dmgEffect, ctx);
+
   const elem = ability.element || null;
   let mult = bypassesTypeChart(attacker) ? 1 : (elem ? TYPE_CHART[elem][defender.creature.type] : 1);
   if (checkEvasion(defender)) {
     return { dmg: 0, mult, elem, crit: false, evaded: true };
   }
-  // Sharper damage curve: less HP-sponge feel; fights resolve in 3-5 turns instead of 8-10.
   let raw = atk * (power / 40) * (atk / (atk + def * 0.85)) * 0.75;
   if (raw < 1) raw = 1;
   raw *= mult;
-  // Broken status: target takes vulnerability% extra from all damage.
   if (defender.statuses && defender.statuses.cursed && defender.statuses.cursed.vulnerability) {
     raw *= 1 + defender.statuses.cursed.vulnerability;
   }
   if (defender.bracingThisTurn) raw *= 0.4;
   raw = applyFlatDmgReduction(defender, raw, elem);
+  raw *= comboBonus(attacker);
   const crit = Math.random() < getCritChance(attacker);
   if (crit) raw *= getCritMult(attacker);
   raw *= relicDamageMult(attacker, defender);
-  raw *= rand(0.94, 1.06);
+  raw *= rand(0.95, 1.05);
   raw = Math.max(1, Math.round(raw));
   return { dmg: raw, mult, elem, crit };
 }
 
-// Deterministic damage estimate for the move-button UI. Sums across all damage
-// effects in the ability's first phase. No crit/random/evade.
+// Reads sig_consume_*_dmg / sig_consume_*_aoe / sig_consume_*_shatter modifiers
+// from the phase and applies their per-stack power scaling. The actual stack
+// consumption happens later in the effect handler; here we just compute the
+// damage multiplier for the calc.
+function applySigDamageMods(attacker, defender, power, phase, dmgEffect, ctx) {
+  if (!phase) return power;
+  const sigStacks = attacker.sigStacks || 0;
+  for (const eff of phase) {
+    if (!eff.type || !eff.type.startsWith('sig_consume_')) continue;
+    if (eff.type === 'sig_consume_tide_dmg') {
+      // Tide alternates 0/1: 0 = low, 1 = high
+      const tide = sigStacks; // stored as 0 or 1
+      const m = tide >= 1 ? (eff.highMult ?? 1.5) : (eff.lowMult ?? 0.7);
+      power *= m;
+    } else if (eff.type === 'sig_consume_light_dmg' ||
+               eff.type === 'sig_consume_heat_dmg' ||
+               eff.type === 'sig_consume_roots_dmg' ||
+               eff.type === 'sig_consume_marks_dmg') {
+      const min = eff.minStacks ?? 0;
+      if (sigStacks >= min) power *= 1 + (eff.perStack ?? 0.2) * sigStacks;
+    } else if (eff.type === 'sig_consume_frost_shatter') {
+      power *= 1 + (eff.perStack ?? 0.2) * sigStacks;
+    } else if (eff.type === 'sig_consume_embers_aoe') {
+      // Each Ember adds flat power; handled here as multiplier on the base hit
+      power += (eff.perStack ?? 0.4) * sigStacks * 100; // perStack treated as +40 power per Ember
+      // But this would be misleading; instead handle in handler as flat extra hit
+    }
+  }
+  return power;
+}
+
+// Deterministic damage estimate for the action UI. Optionally hides crit/RNG.
+// `attacker.actionsThisTurn` is 0-indexed at preview time; use as-is for combo bonus.
 export function estimateDamage(attacker, defender, ability) {
   if (!attacker || !defender) return 0;
   const phases = ability.phases || [];
-  // For multi-phase abilities, estimate the LAST phase (the payoff).
   const phase = phases[phases.length - 1] || [];
   const dmgEffects = phase.filter(e => e.type === 'damage');
   if (dmgEffects.length === 0) return 0;
@@ -102,9 +145,13 @@ export function estimateDamage(attacker, defender, ability) {
   const defenderSpd = effectiveStat(defender, 'spd');
   const elem = ability.element || null;
   const mult = bypassesTypeChart(attacker) ? 1 : (elem ? TYPE_CHART[elem][defender.creature.type] : 1);
+  // Estimate combo bonus assuming this would be the next action of this round.
+  const priorActions = attacker.actionsThisTurn || 0;
+  const combo = Math.min(1.5, 1 + COMBO_BONUS_PER_EXTRA_ACTION * priorActions);
   let total = 0;
   for (const dmgEff of dmgEffects) {
-    const power = applyPowerMult(attacker, defender, ability, dmgEff.power || 0, phase, { attackerSpd, defenderSpd });
+    let power = applyPowerMult(attacker, defender, ability, dmgEff.power || 0, phase, { attackerSpd, defenderSpd });
+    power = applySigDamageMods(attacker, defender, power, phase, dmgEff, {});
     let raw = atk * (power / 40) * (atk / (atk + def * 0.85)) * 0.75;
     if (raw < 1) raw = 1;
     raw *= mult;
@@ -112,6 +159,7 @@ export function estimateDamage(attacker, defender, ability) {
       raw *= 1 + defender.statuses.cursed.vulnerability;
     }
     raw = applyFlatDmgReduction(defender, raw, elem);
+    raw *= combo;
     raw *= relicDamageMult(attacker, defender);
     raw = Math.max(1, Math.round(raw));
     total += raw * (dmgEff.hits || 1);

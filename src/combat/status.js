@@ -1,13 +1,12 @@
-import { pushLog } from '../state.js';
+import { pushGame } from '../state.js';
 import { displayName } from '../creature.js';
-import { blocksStatus, modifyHeal, applyBenchPassives, applyTurnStartPassives } from './passives.js';
+import { blocksStatus, modifyHeal, applyBenchPassives } from './passives.js';
 import { spawnFloat } from '../ui/animations.js';
 import { STATUSES } from '../data.js';
-import { drainLog, affTick, eventText } from './log.js';
+import { drainBeats } from './log.js';
 
-const lower = (s) => String(s || '');
+const cap = (s) => String(s || '').replace(/^./, c => c.toUpperCase());
 
-// Apply or refresh a status. Params fall back to canonical defaults in statuseffects.json.
 export function applyStatus(f, type, opts) {
   opts = opts || {};
   if (blocksStatus(f, type)) return false;
@@ -49,20 +48,17 @@ export function cleanseStatuses(f) {
   f.statuses.dazed = null;
 }
 
-// Tick statuses (burn/bloom/soaking/dazed/cursed). Used for active and bench fighters.
-// Each tick that affects HP becomes a separate log line so the narrative reads
-// one beat at a time. Bench ticks are silent (no log line, no animation).
 export async function tickFighterStatuses(f, side, isBench) {
-  const spotterMult = applyBenchPassives(f, isBench, { applyHeal });
+  applyBenchPassives(f, isBench, { applyHeal });
   if (f.statuses.burn && f.statuses.burn.turns > 0) {
-    const dmg = Math.max(1, Math.round(f.creature.maxHp * f.statuses.burn.percentPerTurn * spotterMult));
+    const dmg = Math.max(1, Math.round(f.creature.maxHp * f.statuses.burn.percentPerTurn));
     f.hp = Math.max(0, f.hp - dmg);
     if (!isBench) {
-      pushLog(affTick('burn'), {
-        damage: dmg,
+      pushGame(`${cap(displayName(f.creature))} · Fevering -${dmg}.`, {
+        damage: dmg, cls: 'eff',
         anim: () => spawnFloat(side, String(dmg), 'dmg'),
       });
-      await drainLog();
+      await drainBeats();
     }
     f.statuses.burn.turns--;
     if (f.statuses.burn.turns <= 0) f.statuses.burn = null;
@@ -70,11 +66,11 @@ export async function tickFighterStatuses(f, side, isBench) {
   if (f.statuses.bloom && f.statuses.bloom.turns > 0) {
     const healed = applyHeal(f, Math.max(1, Math.round(f.creature.maxHp * f.statuses.bloom.percentPerTurn)));
     if (healed > 0 && !isBench) {
-      pushLog(affTick('bloom'), {
-        heal: healed,
+      pushGame(`${cap(displayName(f.creature))} · Mending +${healed}.`, {
+        heal: healed, cls: 'heal',
         anim: () => spawnFloat(side, `+${healed}`, 'heal'),
       });
-      await drainLog();
+      await drainBeats();
     }
     f.statuses.bloom.turns--;
     if (f.statuses.bloom.turns <= 0) f.statuses.bloom = null;
@@ -93,49 +89,29 @@ export async function tickFighterStatuses(f, side, isBench) {
   }
 }
 
-export async function tickStartOfTurn(f, side) {
+export async function tickStartOfRound(f, side) {
+  if (!f) return;
+  // healing-over-time tick
   if (f.healing && f.healing.turnsLeft > 0) {
     const healed = applyHeal(f, f.healing.perTurn);
     f.healing.turnsLeft--;
     if (f.healing.turnsLeft <= 0) f.healing = null;
     if (healed > 0) {
-      pushLog('The wound holds.', {
-        heal: healed,
+      pushGame(`${cap(displayName(f.creature))} · regen +${healed}.`, {
+        heal: healed, cls: 'heal',
         anim: () => spawnFloat(side, `+${healed}`, 'heal'),
       });
-      await drainLog();
+      await drainBeats();
     }
   }
-  applyTurnStartPassives(f, side, { applyHeal, spawnFloat, pushLog, displayName });
-  await drainLog();
   await tickFighterStatuses(f, side, false);
-  if (f.pendingSwapBuff) {
-    for (const [k, v] of Object.entries(f.pendingSwapBuff)) {
-      f.statMods[k] += v;
-    }
-    pushLog(eventText('swap_arrives_buffed', { actor: lower(displayName(f.creature)) }), { cls: 'eff' });
-    await drainLog();
-    f.pendingSwapBuff = null;
-  }
-  if (f.pendingSwapHeal > 0) {
-    const amt = Math.round(f.creature.maxHp * f.pendingSwapHeal);
-    const healed = applyHeal(f, amt);
-    if (healed > 0) {
-      pushLog(eventText('swap_arrives_healed', { actor: lower(displayName(f.creature)) }), {
-        heal: healed,
-        anim: () => spawnFloat(side, `+${healed}`, 'heal'),
-      });
-      await drainLog();
-    }
-    f.pendingSwapHeal = 0;
-  }
+  // Reset bracingThisTurn at start of each round
   f.bracingThisTurn = false;
 }
 
-// Apply healing respecting passive modifiers (berserker blocks, blooming/vampire_touch amplify).
 export function applyHeal(f, baseAmount) {
-  const { amount, cap } = modifyHeal(f, baseAmount);
+  const { amount, cap: capHp } = modifyHeal(f, baseAmount);
   const before = f.hp;
-  f.hp = Math.min(cap, f.hp + amount);
+  f.hp = Math.min(capHp, f.hp + amount);
   return f.hp - before;
 }

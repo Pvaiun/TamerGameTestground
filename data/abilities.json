@@ -1,659 +1,453 @@
 {
+  "_format": {
+    "note": "Each ability has cost (1-3 energy), priority (legacy, used for tie-break only), phases [[effect,...],...] and short text. Signature abilities (per-species) reference sigStacks via type:'sig_*' effects. The intent label is shown to the player when an enemy plans this action."
+  },
+
   "strike": {
     "name": "Strike",
-    "priority": 0,
+    "intent": "Strike",
+    "cost": 1,
+    "tags": ["attack"],
     "phases": [
-      [
-        { "type": "damage", "power": 50 }
-      ]
+      [{ "type": "damage", "power": 38 }]
     ],
-    "effect": "Reliable. Deal 50 power damage.",
+    "effect": "Cheap basic attack. 38 power.",
     "flavor": "They hit it. !!There is no other word for what they did.!!"
   },
-  "heavy_blow": {
-    "name": "Press",
-    "priority": -2,
+
+  "fury": {
+    "name": "Rage",
+    "intent": "Rage",
+    "cost": 1,
+    "tags": ["buff"],
     "phases": [
       [
-        { "type": "damage", "power": 90 }
+        { "type": "buff", "statMult": { "atk": 0.30 }, "targets": ["self"], "turns": 2 }
       ]
     ],
-    "effect": "Deal 90 power damage. Priority -2.",
-    "flavor": "All their weight, downward. It ~~breaks~~ holds."
+    "effect": "Atk +30% for 2 rounds.",
+    "flavor": "The room narrows. Only what they strike is **real**."
   },
-  "quick_jab": {
-    "name": "Jab",
-    "priority": 2,
+
+  "focus": {
+    "name": "Focus",
+    "intent": "Focus",
+    "cost": 1,
+    "tags": ["buff"],
     "phases": [
       [
-        { "type": "damage", "power": 30 }
+        { "type": "buff", "statMult": { "def": 0.30 }, "targets": ["self"], "turns": 2 }
       ]
     ],
-    "effect": "Deal 30 power damage. Priority +2.",
-    "flavor": "They were already hitting it."
+    "effect": "Def +30% for 2 rounds.",
+    "flavor": "They steady. Nothing else is in the room."
   },
-  "double_strike": {
-    "name": "Thrash",
-    "priority": 0,
+
+  "stoic": {
+    "name": "Brace",
+    "intent": "Brace",
+    "cost": 1,
+    "tags": ["defense"],
     "phases": [
       [
-        { "type": "damage", "power": 35, "hits": 2 }
-      ]
-    ],
-    "effect": "Deal 35 power damage, twice.",
-    "flavor": "They hit it. Then they hit it again before they ~~thought~~ stopped."
-  },
-  "reckless": {
-    "name": "Throw all",
-    "priority": 0,
-    "phases": [
-      [
-        { "type": "hp_cost", "percent": 0.15 },
-        { "type": "damage", "power": 95 }
-      ]
-    ],
-    "effect": "Deal 95 power damage. Cost: 15% of max hp.",
-    "flavor": "They give it everything. !!Some of what they give is theirs.!!"
-  },
-  "pyre": {
-    "name": "Kindle",
-    "element": "fire",
-    "priority": 0,
-    "phases": [
-      [
-        { "type": "damage", "power": 40 },
-        { "type": "apply_status", "status": "burn", "targets": ["enemy"] }
-      ]
-    ],
-    "effect": "Deal 40 power damage. Apply Fevering (3t, -8% hp/turn).",
-    "flavor": "They tell it it is warming. **They lie.**"
-  },
-  "ember": {
-    "name": "Spark",
-    "element": "fire",
-    "priority": 0,
-    "phases": [
-      [
-        { "type": "damage", "power": 60 }
-      ]
-    ],
-    "effect": "Deal 60 power damage. Element: ember.",
-    "flavor": "A small heat. It remembers being [[6]]."
-  },
-  "inferno": {
-    "name": "Release the heat",
-    "element": "fire",
-    "priority": 0,
-    "phases": [
-      [],
-      [
-        { "type": "damage", "power": 110 },
-        { "type": "apply_status", "status": "burn", "targets": ["enemy"] }
-      ]
-    ],
-    "effect": "Charge one turn. Release: 110 power damage and Fevering.",
-    "flavor": "First they fold it inward. Then they let it [[3]]."
-  },
-  "self_immolate": {
-    "name": "Burn inward",
-    "element": "fire",
-    "priority": 0,
-    "phases": [
-      [
-        { "type": "hp_cost", "percent": 0.20 },
-        { "type": "damage", "power": 80 }
-      ]
-    ],
-    "effect": "Deal 80 power damage. Cost: 20% of max hp.",
-    "flavor": "They feed it from their own. It eats and ~~gives back~~ !!takes more!!."
-  },
-  "cinder_burst": {
-    "name": "Spit ash",
-    "element": "fire",
-    "priority": 0,
-    "phases": [
-      [
-        { "type": "damage", "power": 32, "hits": 2 },
-        { "type": "apply_status", "status": "burn", "targets": ["enemy"] }
-      ]
-    ],
-    "effect": "Deal 32 power damage twice. Apply Fevering.",
-    "flavor": "What is left in their mouth, they give."
-  },
-  "smoldering": {
-    "name": "Smolder",
-    "element": "fire",
-    "priority": 0,
-    "phases": [
-      [
-        { "type": "damage", "power": 28 },
-        { "type": "apply_status", "status": "burn", "targets": ["enemy"] },
-        { "type": "status_synergy", "status": "burn", "powerMult": 1.5 }
-      ]
-    ],
-    "effect": "Deal 28 power damage. Apply Fevering. +50% damage if target is already Fevering.",
-    "flavor": "The heat comes after, !!slower than the strike!!."
-  },
-  "phoenix_dive": {
-    "name": "Fold into fire",
-    "element": "fire",
-    "priority": 0,
-    "phases": [
-      [
-        { "type": "damage", "power": 55 },
-        { "type": "lifesteal", "percentOfDamage": 0.5 }
-      ]
-    ],
-    "effect": "Deal 55 power damage. Heal 50% of damage dealt.",
-    "flavor": "They become heat. !!They drink what they strike.!!"
-  },
-  "pyroclasm": {
-    "name": "Open the kiln",
-    "element": "fire",
-    "priority": 0,
-    "phases": [
-      [
-        { "type": "damage", "power": 25 },
-        { "type": "apply_status", "status": "burn", "targets": ["enemy", "enemy_bench"] }
-      ]
-    ],
-    "effect": "Deal 25 power damage. Apply Fevering to active and bench enemies.",
-    "flavor": "Everything inside it opens at once."
-  },
-  "surge": {
-    "name": "Rise",
-    "element": "water",
-    "priority": 0,
-    "phases": [
-      [
-        { "type": "damage", "power": 40 },
-        { "type": "apply_status", "status": "soaking", "targets": ["enemy"] }
-      ]
-    ],
-    "effect": "Deal 40 power damage. Apply Drained (3t, -30% atk/spd).",
-    "flavor": "The water knows where to go."
-  },
-  "drench": {
-    "name": "Drown",
-    "element": "water",
-    "priority": 0,
-    "phases": [
-      [
-        { "type": "damage", "power": 60 }
-      ]
-    ],
-    "effect": "Deal 60 power damage. Element: brine.",
-    "flavor": "The water reaches !!places they did not know it could!!."
-  },
-  "maelstrom": {
-    "name": "Circle them",
-    "element": "water",
-    "priority": 0,
-    "phases": [
-      [],
-      [
-        { "type": "damage", "power": 110 },
-        { "type": "apply_status", "status": "soaking", "targets": ["enemy"] }
-      ]
-    ],
-    "effect": "Charge one turn. Release: 110 power damage and Drained.",
-    "flavor": "The water remembers where they tried to go."
-  },
-  "lifestream": {
-    "name": "Drink the wound",
-    "element": "water",
-    "priority": 0,
-    "phases": [
-      [
-        { "type": "damage", "power": 30 },
-        { "type": "lifesteal", "percentOfDamage": 1.0 }
-      ]
-    ],
-    "effect": "Deal 30 power damage. Heal 100% of damage dealt.",
-    "flavor": "They take from it what it gave. It is ~~fair~~ familiar."
-  },
-  "brine_lance": {
-    "name": "Salt",
-    "element": "water",
-    "priority": 1,
-    "phases": [
-      [
-        { "type": "damage", "power": 50 },
-        { "type": "apply_status", "status": "soaking", "targets": ["enemy"] }
-      ]
-    ],
-    "effect": "Deal 50 power damage. Apply Drained. Priority +1.",
-    "flavor": "The wound takes longer to ~~close~~ forget."
-  },
-  "tidal_pull": {
-    "name": "Draw under",
-    "element": "water",
-    "priority": 0,
-    "phases": [
-      [
-        { "type": "damage", "power": 35 },
-        { "type": "swap", "targets": ["enemy"] }
-      ]
-    ],
-    "effect": "Deal 35 power damage. Force opponent to swap.",
-    "flavor": "They pull what is here away from itself."
-  },
-  "vapor_cloak": {
-    "name": "Step into steam",
-    "element": "water",
-    "priority": 1,
-    "phases": [
-      [
-        { "type": "buff", "statMult": { "def": 0.25 }, "targets": ["self"] },
         { "type": "bracing", "targets": ["self"] }
       ]
     ],
-    "effect": "Brace this turn (-60% incoming damage). Self def +25% rest of battle. Priority +1.",
-    "flavor": "They are where they were. The other cannot ~~find~~ see it."
+    "effect": "Reduce incoming damage 60% this round.",
+    "flavor": "They steady. !!The room narrows around them.!!"
   },
-  "glacial_hold": {
-    "name": "Still them",
-    "element": "water",
-    "priority": 0,
+
+  "mend": {
+    "name": "Mend",
+    "intent": "Mend",
+    "cost": 2,
+    "tags": ["heal"],
+    "phases": [
+      [
+        { "type": "heal_self_pct", "percent": 0.20 }
+      ]
+    ],
+    "effect": "Heal 20% max hp.",
+    "flavor": "They bind what is open. It ~~closes~~ keeps."
+  },
+
+  "ember": {
+    "name": "Ember",
+    "intent": "Ember",
+    "element": "fire",
+    "cost": 2,
+    "tags": ["attack"],
+    "phases": [
+      [{ "type": "damage", "power": 60 }]
+    ],
+    "effect": "Deal 60 power fire damage.",
+    "flavor": "A small heat. It remembers being [[6]]."
+  },
+
+  "smoldering": {
+    "name": "Smolder",
+    "intent": "Smolder",
+    "element": "fire",
+    "cost": 2,
+    "tags": ["attack", "status"],
     "phases": [
       [
         { "type": "damage", "power": 35 },
+        { "type": "apply_status", "status": "burn", "targets": ["enemy"] }
+      ]
+    ],
+    "effect": "35 fire dmg + Fevering.",
+    "flavor": "The heat comes after, !!slower than the strike!!."
+  },
+
+  "surge": {
+    "name": "Surge",
+    "intent": "Surge",
+    "element": "water",
+    "cost": 2,
+    "tags": ["attack", "sig_tide"],
+    "phases": [
+      [
+        { "type": "damage", "power": 50 },
+        { "type": "sig_consume_tide_dmg", "lowMult": 0.7, "highMult": 1.5 }
+      ]
+    ],
+    "effect": "50 power water dmg. Low tide: 0.7×. High tide: 1.5×.",
+    "flavor": "The water knows where to go."
+  },
+
+  "drown": {
+    "name": "Drown",
+    "intent": "Drown",
+    "element": "water",
+    "cost": 3,
+    "tags": ["attack", "status", "sig_tide"],
+    "phases": [
+      [
+        { "type": "damage", "power": 80 },
         { "type": "apply_status", "status": "soaking", "targets": ["enemy"] },
-        { "type": "apply_status", "status": "dazed", "targets": ["enemy"] }
+        { "type": "sig_consume_tide_dmg", "lowMult": 0.8, "highMult": 1.4 }
       ]
     ],
-    "effect": "Deal 35 power damage. Apply Drained and Sedated.",
-    "flavor": "The cold holds them in place."
+    "effect": "80 power water + Drained. Tide modifies.",
+    "flavor": "The water reaches !!places they did not know it could!!."
   },
-  "bramble": {
-    "name": "Bind",
-    "element": "grass",
-    "priority": 0,
+
+  "vapor_cloak": {
+    "name": "Vapor",
+    "intent": "Vapor",
+    "element": "water",
+    "cost": 1,
+    "tags": ["defense"],
     "phases": [
       [
-        { "type": "damage", "power": 40 },
-        { "type": "apply_status", "status": "bloom", "targets": ["self"] }
+        { "type": "buff", "statMult": { "def": 0.40 }, "targets": ["self"], "turns": 2 }
       ]
     ],
-    "effect": "Deal 40 power damage. Apply Mending to self (3t, +8% hp/turn).",
-    "flavor": "The green takes the shape of teeth."
+    "effect": "Def +40% for 2 rounds.",
+    "flavor": "They are where they were. The other cannot ~~find~~ see it."
   },
-  "verdant_slash": {
-    "name": "Rake",
-    "element": "grass",
-    "priority": 0,
+
+  "tactical_retreat": {
+    "name": "Step Back",
+    "intent": "Step Back",
+    "cost": 2,
+    "tags": ["swap"],
     "phases": [
       [
-        { "type": "damage", "power": 60 }
+        { "type": "swap", "targets": ["self"], "healOnSwap": 0.25 }
       ]
     ],
-    "effect": "Deal 60 power damage. Element: loam.",
-    "flavor": "Small hooks. They do not let go."
+    "effect": "Swap to bench. Incoming heals 25%.",
+    "flavor": "The bench takes the next ~~one~~ blow."
   },
-  "overgrowth": {
-    "name": "Grow over",
-    "element": "grass",
-    "priority": 0,
+
+  "aegis_swap": {
+    "name": "Lightstep",
+    "intent": "Lightstep",
+    "element": "light",
+    "cost": 2,
+    "tags": ["swap"],
     "phases": [
-      [],
       [
-        { "type": "damage", "power": 110 },
-        { "type": "apply_status", "status": "bloom", "targets": ["self"] }
+        { "type": "swap", "targets": ["self"], "buffOnSwap": { "def": 0.30 } }
       ]
     ],
-    "effect": "Charge one turn. Release: 110 power damage and Mending to self.",
-    "flavor": "There is more of them than there should be."
+    "effect": "Swap to bench. Incoming gets def +30%.",
+    "flavor": "They go behind. Another comes forward, ~~bright~~ warmed."
   },
+
+  "shadow_step": {
+    "name": "Slip",
+    "intent": "Slip",
+    "element": "dark",
+    "cost": 2,
+    "tags": ["attack", "swap"],
+    "phases": [
+      [
+        { "type": "damage", "power": 35 },
+        { "type": "swap", "targets": ["self"] }
+      ]
+    ],
+    "effect": "35 dmg + swap to bench.",
+    "flavor": "They were here. Now they are ~~not~~ behind it."
+  },
+
+  "shade": {
+    "name": "Shade",
+    "intent": "Shade",
+    "element": "dark",
+    "cost": 2,
+    "tags": ["attack"],
+    "phases": [
+      [
+        { "type": "damage", "power": 45 },
+        { "type": "pierce", "defReduction": 0.6 }
+      ]
+    ],
+    "effect": "45 dmg, ignores 60% def.",
+    "flavor": "They touch through the [[5]]."
+  },
+
   "spore_cloud": {
-    "name": "Open the spore",
+    "name": "Spore",
+    "intent": "Spore",
     "element": "grass",
-    "priority": 0,
+    "cost": 2,
+    "tags": ["status"],
     "phases": [
       [
         { "type": "apply_status", "status": "bloom", "targets": ["self", "bench"] },
         { "type": "apply_status", "status": "soaking", "targets": ["enemy"] }
       ]
     ],
-    "effect": "Apply Mending to self and bench. Apply Drained to enemy.",
+    "effect": "Mending self+bench. Drained on enemy.",
     "flavor": "They release what was held in. The air ~~softens~~ thickens."
   },
-  "photonic_lash": {
-    "name": "Light-lash",
-    "element": "grass",
-    "priority": 0,
+
+  "halo": {
+    "name": "Halo",
+    "intent": "Halo",
+    "element": "light",
+    "cost": 1,
+    "tags": ["attack", "sig_light"],
     "phases": [
       [
-        { "type": "damage", "power": 50 },
-        { "type": "apply_status", "status": "bloom", "targets": ["self"] }
+        { "type": "damage", "power": 30 },
+        { "type": "sig_gain_light", "amount": 1 }
       ]
     ],
-    "effect": "Deal 50 power damage. Apply Mending to self.",
-    "flavor": "The green carries the brightness. It does not survive it."
+    "effect": "30 light dmg. Build 1 Light.",
+    "flavor": "A small light. They keep it close."
   },
-  "strangle_vine": {
-    "name": "Tighten",
-    "element": "grass",
-    "priority": 0,
+
+  "sunburst": {
+    "name": "Sunburst",
+    "intent": "Sunburst",
+    "element": "light",
+    "cost": 3,
+    "tags": ["attack", "sig_light"],
+    "phases": [
+      [
+        { "type": "damage", "power": 70 },
+        { "type": "sig_consume_light_dmg", "perStack": 0.20, "minStacks": 0 }
+      ]
+    ],
+    "effect": "70 light dmg. Spend all Light: +20% dmg per stack.",
+    "flavor": "They open. Whatever they were holding goes with it."
+  },
+
+  "pyre": {
+    "name": "Pyre",
+    "intent": "Pyre",
+    "element": "fire",
+    "cost": 2,
+    "tags": ["attack", "status", "sig_heat"],
     "phases": [
       [
         { "type": "damage", "power": 45 },
-        { "type": "execute_scale", "scaleAmount": 0.6 }
+        { "type": "apply_status", "status": "burn", "targets": ["enemy"] },
+        { "type": "sig_gain_heat", "amount": 1 }
       ]
     ],
-    "effect": "Deal 45 power damage. Up to +60% damage to wounded targets.",
-    "flavor": "The more open the wound, !!the deeper it reaches!!."
+    "effect": "45 fire dmg + Fevering. Build 1 Heat.",
+    "flavor": "They tell it it is warming. **They lie.**"
   },
-  "healing_wind": {
-    "name": "Let the green pass",
+
+  "furnace": {
+    "name": "Furnace",
+    "intent": "Furnace",
+    "element": "fire",
+    "cost": 3,
+    "tags": ["attack", "sig_heat"],
+    "phases": [
+      [
+        { "type": "damage", "power": 60 },
+        { "type": "sig_consume_heat_dmg", "perStack": 0.30, "minStacks": 1 }
+      ]
+    ],
+    "effect": "60 fire dmg. Spend all Heat: +30% per stack. Needs 1+ Heat.",
+    "flavor": "They open the kiln. !!It does not close.!!"
+  },
+
+  "bramble": {
+    "name": "Bramble",
+    "intent": "Bramble",
     "element": "grass",
-    "priority": 1,
-    "phases": [
-      [
-        { "type": "apply_status", "status": "bloom", "targets": ["bench"] },
-        { "type": "heal_over_time", "percent": 0.06, "turns": 3, "targets": ["self"] }
-      ]
-    ],
-    "effect": "Apply Mending to bench. Heal self 6%/turn for 3 turns. Priority +1.",
-    "flavor": "It goes through them. Some stays."
-  },
-  "fertile_ground": {
-    "name": "Take root",
-    "element": "grass",
-    "priority": 1,
-    "phases": [
-      [
-        { "type": "buff", "statMult": { "atk": 0.20 }, "targets": ["bench"] }
-      ]
-    ],
-    "effect": "Bench attack +20%. Priority +1.",
-    "flavor": "What they are doing is older than they are."
-  },
-  "radiance": {
-    "name": "Burn clean",
-    "element": "light",
-    "priority": 0,
-    "phases": [
-      [
-        { "type": "damage", "power": 45 },
-        { "type": "cleanse", "targets": ["self"] }
-      ]
-    ],
-    "effect": "Deal 45 power damage. Cleanse self.",
-    "flavor": "The light leaves nothing on them."
-  },
-  "sunbeam": {
-    "name": "Shine",
-    "element": "light",
-    "priority": 0,
-    "phases": [
-      [
-        { "type": "damage", "power": 60 }
-      ]
-    ],
-    "effect": "Deal 60 power damage. Element: halo.",
-    "flavor": "The line lands. They do not look at it directly."
-  },
-  "solar_flare": {
-    "name": "Open the bright",
-    "element": "light",
-    "priority": 0,
-    "phases": [
-      [],
-      [
-        { "type": "damage", "power": 100 },
-        { "type": "apply_status", "status": "dazed", "targets": ["enemy"] }
-      ]
-    ],
-    "effect": "Charge one turn. Release: 100 power damage and Sedated.",
-    "flavor": "They gather it. Then they are too much of it."
-  },
-  "dawn_strike": {
-    "name": "First blow",
-    "element": "light",
-    "priority": 1,
-    "phases": [
-      [
-        { "type": "damage", "power": 40 },
-        { "type": "apply_status", "status": "dazed", "targets": ["enemy"] }
-      ]
-    ],
-    "effect": "Deal 40 power damage. Apply Sedated. Priority +1.",
-    "flavor": "They strike !!before the other has agreed to be here!!."
-  },
-  "glowing_mark": {
-    "name": "Name in light",
-    "element": "light",
-    "priority": 1,
-    "phases": [
-      [
-        { "type": "apply_status", "status": "dazed", "targets": ["enemy"] },
-        { "type": "buff", "statMult": { "atk": 0.20 }, "targets": ["self"] }
-      ]
-    ],
-    "effect": "Apply Sedated. Self atk +20%. Priority +1.",
-    "flavor": "The other becomes easier to see. So do the next blows."
-  },
-  "beacon": {
-    "name": "Stand bright",
-    "element": "light",
-    "priority": 1,
-    "phases": [
-      [
-        { "type": "buff", "statMult": { "def": 0.25 }, "targets": ["bench"] },
-        { "type": "heal_over_time", "percent": 0.05, "turns": 2, "targets": ["bench"] }
-      ]
-    ],
-    "effect": "Bench def +25%. Heal bench 5%/turn for 2 turns. Priority +1.",
-    "flavor": "The others will look at them. They will not mean to. It is **flattering**."
-  },
-  "aegis_swap": {
-    "name": "Step into light",
-    "element": "light",
-    "priority": 3,
-    "phases": [
-      [
-        { "type": "swap", "targets": ["self"], "buffOnSwap": { "def": 0.25 }, "healOnSwap": 0.10 }
-      ]
-    ],
-    "effect": "Swap with bench. Incoming ally gains def +25% and heals 10%. Priority +3.",
-    "flavor": "They go behind. Another comes forward, ~~bright~~ warmed."
-  },
-  "cleansing_light": {
-    "name": "Wash it",
-    "element": "light",
-    "priority": 1,
-    "phases": [
-      [
-        { "type": "cleanse", "targets": ["self"] },
-        { "type": "heal_over_time", "percent": 0.06, "turns": 3, "targets": ["self"] }
-      ]
-    ],
-    "effect": "Cleanse self. Heal 6%/turn for 3 turns. Priority +1.",
-    "flavor": "What was on them lifts. They feel **clean**."
-  },
-  "shade": {
-    "name": "Slip",
-    "element": "dark",
-    "priority": 0,
+    "cost": 2,
+    "tags": ["attack", "sig_roots"],
     "phases": [
       [
         { "type": "damage", "power": 38 },
-        { "type": "pierce", "defReduction": 0.5 }
+        { "type": "apply_status", "status": "bloom", "targets": ["self"] },
+        { "type": "sig_gain_roots", "amount": 1 }
       ]
     ],
-    "effect": "Deal 38 power damage. Ignore 50% of defense.",
-    "flavor": "They touch through the [[5]]."
+    "effect": "38 grass dmg. Mending self. Build 1 Roots.",
+    "flavor": "The green takes the shape of teeth."
   },
-  "umbral_slash": {
-    "name": "Open them dark",
-    "element": "dark",
-    "priority": 0,
+
+  "overgrowth": {
+    "name": "Overgrowth",
+    "intent": "Overgrowth",
+    "element": "grass",
+    "cost": 3,
+    "tags": ["attack", "sig_roots"],
     "phases": [
       [
-        { "type": "damage", "power": 60 }
+        { "type": "damage", "power": 55 },
+        { "type": "sig_consume_roots_dmg", "perStack": 0.25 }
       ]
     ],
-    "effect": "Deal 60 power damage. Element: hush.",
-    "flavor": "The wound is deeper than the cut."
+    "effect": "55 grass dmg. Spend all Roots: +25% per stack.",
+    "flavor": "There is more of them than there should be."
   },
-  "hex": {
-    "name": "Name it badly",
+
+  "mark_shade": {
+    "name": "Mark",
+    "intent": "Mark",
     "element": "dark",
-    "priority": 0,
+    "cost": 1,
+    "tags": ["attack", "status", "sig_marks"],
     "phases": [
       [
-        { "type": "damage", "power": 35 },
-        { "type": "apply_status", "status": "cursed", "targets": ["enemy"] }
+        { "type": "damage", "power": 22 },
+        { "type": "sig_gain_marks", "amount": 1 }
       ]
     ],
-    "effect": "Deal 35 power damage. Apply Broken (3t, +25% damage taken).",
-    "flavor": "They write the wrong word for it. !!They let it wear it.!!"
+    "effect": "22 dmg. Place 1 Mark on enemy.",
+    "flavor": "They write it down where the patient cannot see."
   },
-  "soulrend": {
-    "name": "Take a piece",
+
+  "execute": {
+    "name": "Execute",
+    "intent": "Execute",
     "element": "dark",
-    "priority": 0,
+    "cost": 3,
+    "tags": ["attack", "sig_marks"],
     "phases": [
       [
-        { "type": "hp_cost", "percent": 0.15 },
-        { "type": "damage", "power": 75 },
-        { "type": "lifesteal", "percentOfDamage": 0.4 }
+        { "type": "damage", "power": 60 },
+        { "type": "sig_consume_marks_dmg", "perStack": 0.50, "minStacks": 1 }
       ]
     ],
-    "effect": "Pay 15% hp. Deal 75 power damage and heal 40% of it.",
-    "flavor": "They pay in their own. !!It pays in more.!!"
+    "effect": "60 dmg. Spend all Marks: +50% per stack. Needs 1+ Mark.",
+    "flavor": "They name what they wrote. !!The page becomes the wound.!!"
   },
-  "shadow_step": {
-    "name": "Step into gap",
-    "element": "dark",
-    "priority": 0,
+
+  "chill": {
+    "name": "Chill",
+    "intent": "Chill",
+    "element": "water",
+    "cost": 1,
+    "tags": ["attack", "status", "sig_frost"],
     "phases": [
       [
-        { "type": "damage", "power": 35 },
-        { "type": "swap", "targets": ["self"] }
+        { "type": "damage", "power": 24 },
+        { "type": "sig_gain_frost", "amount": 1 }
       ]
     ],
-    "effect": "Deal 35 power damage. Swap with bench.",
-    "flavor": "They were here. Now they are ~~not~~ behind it."
+    "effect": "24 water dmg. Build 1 Frost.",
+    "flavor": "The cold finds them first."
   },
-  "cursed_bond": {
-    "name": "Tie it to me",
-    "element": "dark",
-    "priority": 0,
-    "phases": [
-      [
-        { "type": "apply_status", "status": "cursed", "targets": ["enemy", "enemy_bench"] }
-      ]
-    ],
-    "effect": "Apply Broken to active and bench enemies.",
-    "flavor": "What happens to it ~~happens~~ has happened."
-  },
-  "eclipse_slash": {
-    "name": "Blot",
-    "element": "dark",
-    "priority": 0,
+
+  "shatter": {
+    "name": "Shatter",
+    "intent": "Shatter",
+    "element": "water",
+    "cost": 3,
+    "tags": ["attack", "sig_frost"],
     "phases": [
       [
         { "type": "damage", "power": 50 },
-        { "type": "status_synergy", "status": "cursed", "powerMult": 1.6 },
-        { "type": "apply_status", "status": "cursed", "targets": ["enemy"] }
+        { "type": "sig_consume_frost_shatter", "perStack": 0.25 }
       ]
     ],
-    "effect": "Deal 50 power damage. Apply Broken. +60% damage if already Broken.",
-    "flavor": "The wound goes ~~dim~~ inward."
+    "effect": "50 dmg. Spend all Frost: +25% dmg per, applies Sedated if 3+.",
+    "flavor": "What was cold is now ~~broken~~ open."
   },
-  "witherer": {
-    "name": "Unmake",
-    "element": "dark",
-    "priority": 0,
+
+  "radiance": {
+    "name": "Radiance",
+    "intent": "Radiance",
+    "element": "light",
+    "cost": 2,
+    "tags": ["attack", "sig_embers"],
     "phases": [
       [
-        { "type": "damage", "power": 45 },
-        { "type": "apply_status", "status": "cursed", "targets": ["enemy"] },
-        { "type": "apply_status", "status": "soaking", "targets": ["enemy"] }
+        { "type": "damage", "power": 42 },
+        { "type": "sig_gain_embers", "amount": 1 }
       ]
     ],
-    "effect": "Deal 45 power damage. Apply Broken and Drained.",
-    "flavor": "They ~~kill~~ unmake the small parts."
+    "effect": "42 light dmg. Build 1 Ember.",
+    "flavor": "The light gathers along their hand."
   },
-  "mend": {
-    "name": "Keep",
-    "priority": 1,
+
+  "supernova": {
+    "name": "Supernova",
+    "intent": "Supernova",
+    "element": "light",
+    "cost": 3,
+    "tags": ["attack", "sig_embers"],
     "phases": [
       [
-        { "type": "heal_over_time", "percent": 0.08, "turns": 3, "targets": ["self"] }
+        { "type": "damage", "power": 30 },
+        { "type": "sig_consume_embers_aoe", "perStack": 0.40 }
       ]
     ],
-    "effect": "Heal 8%/turn for 3 turns. Priority +1.",
-    "flavor": "They bind what is open. It ~~closes~~ keeps."
+    "effect": "30 dmg + 30 dmg per Ember to ALL enemies. Spends all.",
+    "flavor": "They open. **The room cannot hold it.**"
   },
-  "tactical_retreat": {
-    "name": "Step back",
-    "priority": 3,
+
+  "devour": {
+    "name": "Devour",
+    "intent": "Devour",
+    "element": "grass",
+    "cost": 2,
+    "tags": ["attack", "sig_hollow"],
     "phases": [
       [
-        { "type": "swap", "targets": ["self"], "healOnSwap": 0.30 }
+        { "type": "damage", "power": 40 },
+        { "type": "lifesteal", "percentOfDamage": 0.6 },
+        { "type": "sig_gain_hollow", "amount": 1 }
       ]
     ],
-    "effect": "Swap with bench. Incoming ally heals 30%. Priority +3.",
-    "flavor": "The bench takes the next ~~one~~ blow."
+    "effect": "40 dmg. Heal 60% of damage. Build 1 Hollow.",
+    "flavor": "They take a piece. ~~They keep it.~~"
   },
-  "pivot_strike": {
-    "name": "Step through",
-    "priority": 1,
+
+  "hollow_call": {
+    "name": "Hollow Call",
+    "intent": "Hollow Call",
+    "element": "grass",
+    "cost": 3,
+    "tags": ["status", "sig_hollow"],
     "phases": [
       [
-        { "type": "damage", "power": 45 },
-        { "type": "swap", "targets": ["self"] }
+        { "type": "sig_consume_hollow_curse", "perStack": 1 }
       ]
     ],
-    "effect": "Deal 45 power damage. Swap with bench. Priority +1.",
-    "flavor": "They are where they were not. The blow lands as they leave."
-  },
-  "vanguard_call": {
-    "name": "Send forward",
-    "priority": 3,
-    "phases": [
-      [
-        { "type": "swap", "targets": ["self"], "buffOnSwap": { "atk": 0.30 } }
-      ]
-    ],
-    "effect": "Swap with bench. Incoming ally gains atk +30%. Priority +3.",
-    "flavor": "They call the next of them. It does not ask why."
-  },
-  "fury": {
-    "name": "Rage forward",
-    "priority": 0,
-    "phases": [
-      [
-        { "type": "hp_cost", "percent": 0.10 },
-        { "type": "buff", "statMult": { "atk": 0.35 }, "targets": ["self"] }
-      ]
-    ],
-    "effect": "Self atk +35%. Cost: 10% of max hp.",
-    "flavor": "The room narrows. Only what they strike is **real**."
-  },
-  "focus": {
-    "name": "Settle",
-    "priority": 1,
-    "phases": [
-      [
-        { "type": "buff", "statMult": { "atk": 0.20, "def": 0.20 }, "targets": ["self"] }
-      ]
-    ],
-    "effect": "Self atk +20%, def +20%. Priority +1.",
-    "flavor": "They sharpen. Nothing else is in the room."
-  },
-  "stoic": {
-    "name": "Set",
-    "priority": 1,
-    "phases": [
-      [
-        { "type": "buff", "statMult": { "def": 0.35 }, "targets": ["self"] },
-        { "type": "bracing", "targets": ["self"] }
-      ]
-    ],
-    "effect": "Brace this turn (-60% incoming damage). Self def +35%. Priority +1.",
-    "flavor": "They steady. !!The room narrows around them.!!"
+    "effect": "Spend all Hollow: apply Broken (3+turns scale with Hollow).",
+    "flavor": "They name the patient by the wrong name. !!The patient answers.!!"
   }
 }

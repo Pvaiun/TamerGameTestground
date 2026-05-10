@@ -1,58 +1,175 @@
 [
   {
-    "species": "Emberkin",
+    "species": "Lumenpup",
+    "type": "light",
+    "starter": true,
+    "primaryPassive": "lightbearer",
+    "secondaryPassive": "vanguard",
+    "signature": { "key": "light", "label": "Light", "max": 5, "gainPerTurn": 1 },
+    "signatureAbilities": ["halo", "sunburst"],
+    "baseStats": { "hp": 28, "atk": 7, "def": 6, "spd": 7 },
+    "growth": { "hp": 1.7, "atk": 1.7, "def": 1.7, "spd": 1.7 },
+    "abilityPool": [
+      "halo",
+      "sunburst",
+      "strike",
+      "mend",
+      "aegis_swap",
+      "focus"
+    ],
+    "name": "[Patient 0413]"
+  },
+  {
+    "species": "Pyrelord",
     "type": "fire",
     "starter": true,
-    "primaryPassive": "inferno_heart",
-    "secondaryPassive": "pristine",
-    "baseStats": {
-      "hp": 24,
-      "atk": 7,
-      "def": 4,
-      "spd": 6
-    },
-    "growth": {
-      "hp": 1.6,
-      "atk": 2.0,
-      "def": 0.7,
-      "spd": 1.7
-    },
+    "primaryPassive": "heatkeeper",
+    "secondaryPassive": "brutal",
+    "signature": { "key": "heat", "label": "Heat", "max": 5, "gainPerTurn": 0 },
+    "signatureAbilities": ["pyre", "furnace"],
+    "baseStats": { "hp": 26, "atk": 9, "def": 5, "spd": 5 },
+    "growth": { "hp": 1.8, "atk": 2.4, "def": 1.0, "spd": 0.8 },
     "abilityPool": [
-      "strike",
       "pyre",
+      "furnace",
+      "strike",
       "ember",
       "fury",
-      "mend",
-      "phoenix_dive",
-      "quick_jab",
-      "vanguard_call"
+      "focus"
     ],
-    "name": "[Bedside]"
+    "name": "[Father, present]"
+  },
+  {
+    "species": "Tidewhelp",
+    "type": "water",
+    "starter": true,
+    "primaryPassive": "tideturn",
+    "secondaryPassive": "second_wind",
+    "signature": { "key": "tide", "label": "Tide", "max": 2, "gainPerTurn": 1 },
+    "signatureAbilities": ["surge", "drown"],
+    "baseStats": { "hp": 36, "atk": 6, "def": 8, "spd": 4 },
+    "growth": { "hp": 2.0, "atk": 1.4, "def": 1.8, "spd": 0.6 },
+    "abilityPool": [
+      "surge",
+      "drown",
+      "strike",
+      "mend",
+      "vapor_cloak",
+      "tactical_retreat"
+    ],
+    "name": "[Brother came back wrong]"
+  },
+  {
+    "species": "Loamback",
+    "type": "grass",
+    "starter": true,
+    "primaryPassive": "rooted",
+    "secondaryPassive": "sentinel",
+    "signature": { "key": "roots", "label": "Roots", "max": 5, "gainPerTurn": 1 },
+    "signatureAbilities": ["bramble", "overgrowth"],
+    "baseStats": { "hp": 32, "atk": 6, "def": 7, "spd": 5 },
+    "growth": { "hp": 2.0, "atk": 1.4, "def": 1.8, "spd": 1.0 },
+    "abilityPool": [
+      "bramble",
+      "overgrowth",
+      "strike",
+      "mend",
+      "spore_cloud",
+      "focus"
+    ],
+    "name": "[On the waiting list]"
+  },
+  {
+    "species": "Shadowmaw",
+    "type": "dark",
+    "primaryPassive": "consumer",
+    "secondaryPassive": "predators_edge",
+    "signature": { "key": "marks", "label": "Marks", "max": 4, "gainPerTurn": 0 },
+    "signatureAbilities": ["mark_shade", "execute"],
+    "baseStats": { "hp": 22, "atk": 9, "def": 4, "spd": 7 },
+    "growth": { "hp": 1.4, "atk": 2.4, "def": 0.8, "spd": 1.8 },
+    "abilityPool": [
+      "mark_shade",
+      "execute",
+      "strike",
+      "shade",
+      "shadow_step",
+      "fury"
+    ],
+    "name": "[Heard us]"
+  },
+  {
+    "species": "Frostfin",
+    "type": "water",
+    "primaryPassive": "frostbite",
+    "secondaryPassive": "swift",
+    "signature": { "key": "frost", "label": "Frost", "max": 5, "gainPerTurn": 0 },
+    "signatureAbilities": ["chill", "shatter"],
+    "baseStats": { "hp": 24, "atk": 7, "def": 5, "spd": 8 },
+    "growth": { "hp": 1.4, "atk": 1.8, "def": 1.0, "spd": 2.4 },
+    "abilityPool": [
+      "chill",
+      "shatter",
+      "surge",
+      "strike",
+      "tactical_retreat",
+      "focus"
+    ],
+    "name": "[Froze waiting]"
+  },
+  {
+    "species": "Aurabeast",
+    "type": "light",
+    "primaryPassive": "slow_burn",
+    "secondaryPassive": "zealot",
+    "signature": { "key": "embers", "label": "Embers", "max": 5, "gainPerTurn": 1 },
+    "signatureAbilities": ["radiance", "supernova"],
+    "baseStats": { "hp": 24, "atk": 7, "def": 4, "spd": 6 },
+    "growth": { "hp": 1.0, "atk": 2.4, "def": 0.8, "spd": 1.6 },
+    "abilityPool": [
+      "radiance",
+      "supernova",
+      "strike",
+      "ember",
+      "focus",
+      "mend"
+    ],
+    "name": "[Took the notes]"
+  },
+  {
+    "species": "Hollowoak",
+    "type": "grass",
+    "primaryPassive": "hex_eater",
+    "secondaryPassive": "tag_out",
+    "signature": { "key": "hollow", "label": "Hollow", "max": 5, "gainPerTurn": 0 },
+    "signatureAbilities": ["devour", "hollow_call"],
+    "baseStats": { "hp": 30, "atk": 5, "def": 7, "spd": 4 },
+    "growth": { "hp": 2.4, "atk": 1.0, "def": 2.4, "spd": 0.6 },
+    "abilityPool": [
+      "devour",
+      "hollow_call",
+      "strike",
+      "mend",
+      "spore_cloud",
+      "stoic"
+    ],
+    "name": "[Cannot remember names]"
   },
   {
     "species": "Ashmaw",
     "type": "fire",
     "primaryPassive": "pyromancer",
     "secondaryPassive": "curse_weaver",
-    "baseStats": {
-      "hp": 28,
-      "atk": 8,
-      "def": 5,
-      "spd": 4
-    },
-    "growth": {
-      "hp": 1.8,
-      "atk": 2.7,
-      "def": 1.2,
-      "spd": 0.3
-    },
+    "signature": { "key": "heat", "label": "Heat", "max": 5, "gainPerTurn": 0 },
+    "signatureAbilities": ["pyre", "furnace"],
+    "baseStats": { "hp": 28, "atk": 8, "def": 5, "spd": 5 },
+    "growth": { "hp": 1.6, "atk": 2.0, "def": 1.0, "spd": 0.8 },
     "abilityPool": [
       "pyre",
+      "furnace",
+      "strike",
       "ember",
       "smoldering",
-      "heavy_blow",
-      "cinder_burst",
-      "pyroclasm",
       "fury"
     ],
     "name": "[Still hungry]"
@@ -62,81 +179,36 @@
     "type": "fire",
     "primaryPassive": "swift",
     "secondaryPassive": "featherweight",
-    "baseStats": {
-      "hp": 16,
-      "atk": 4,
-      "def": 2,
-      "spd": 9
-    },
-    "growth": {
-      "hp": 0.4,
-      "atk": 0.9,
-      "def": 0.3,
-      "spd": 2.9
-    },
+    "signature": { "key": "heat", "label": "Heat", "max": 5, "gainPerTurn": 0 },
+    "signatureAbilities": ["pyre", "furnace"],
+    "baseStats": { "hp": 18, "atk": 6, "def": 3, "spd": 9 },
+    "growth": { "hp": 1.0, "atk": 1.6, "def": 0.6, "spd": 2.4 },
     "abilityPool": [
-      "quick_jab",
       "pyre",
+      "furnace",
       "strike",
-      "focus",
-      "pivot_strike",
       "shadow_step",
-      "double_strike"
+      "fury",
+      "focus"
     ],
     "name": "[Only one home]"
-  },
-  {
-    "species": "Pyrelord",
-    "type": "fire",
-    "primaryPassive": "brutal",
-    "secondaryPassive": "patient_hunter",
-    "baseStats": {
-      "hp": 18,
-      "atk": 4,
-      "def": 3,
-      "spd": 4
-    },
-    "growth": {
-      "hp": 2.7,
-      "atk": 2.8,
-      "def": 2.2,
-      "spd": 2.4
-    },
-    "abilityPool": [
-      "heavy_blow",
-      "pyre",
-      "inferno",
-      "self_immolate",
-      "reckless",
-      "fury",
-      "strike"
-    ],
-    "name": "[Father, present]"
   },
   {
     "species": "Magmaw",
     "type": "fire",
     "primaryPassive": "stone_skin",
     "secondaryPassive": "bulwark",
-    "baseStats": {
-      "hp": 39,
-      "atk": 10,
-      "def": 11,
-      "spd": 5
-    },
-    "growth": {
-      "hp": 0.3,
-      "atk": 0.4,
-      "def": 0.4,
-      "spd": 0.2
-    },
+    "signature": { "key": "heat", "label": "Heat", "max": 5, "gainPerTurn": 0 },
+    "signatureAbilities": ["pyre", "furnace"],
+    "baseStats": { "hp": 38, "atk": 8, "def": 11, "spd": 4 },
+    "growth": { "hp": 2.0, "atk": 1.4, "def": 1.6, "spd": 0.4 },
     "abilityPool": [
       "pyre",
+      "furnace",
       "strike",
-      "focus",
       "stoic",
-      "smoldering",
-      "ember"
+      "ember",
+      "focus"
     ],
     "name": "[Door he opened]"
   },
@@ -145,26 +217,17 @@
     "type": "fire",
     "primaryPassive": "soul_drain",
     "secondaryPassive": "vampire_touch",
-    "baseStats": {
-      "hp": 26,
-      "atk": 7,
-      "def": 5,
-      "spd": 7
-    },
-    "growth": {
-      "hp": 1.7,
-      "atk": 2.0,
-      "def": 0.6,
-      "spd": 1.5
-    },
+    "signature": { "key": "heat", "label": "Heat", "max": 5, "gainPerTurn": 0 },
+    "signatureAbilities": ["pyre", "furnace"],
+    "baseStats": { "hp": 26, "atk": 7, "def": 5, "spd": 7 },
+    "growth": { "hp": 1.7, "atk": 2.0, "def": 0.8, "spd": 1.4 },
     "abilityPool": [
       "pyre",
+      "furnace",
       "strike",
-      "phoenix_dive",
-      "fury",
       "mend",
-      "tactical_retreat",
-      "ember"
+      "fury",
+      "tactical_retreat"
     ],
     "name": "[Tucks them in at night]"
   },
@@ -173,83 +236,36 @@
     "type": "fire",
     "primaryPassive": "predators_edge",
     "secondaryPassive": "savage",
-    "baseStats": {
-      "hp": 18,
-      "atk": 9,
-      "def": 2,
-      "spd": 6
-    },
-    "growth": {
-      "hp": 0.2,
-      "atk": 2.9,
-      "def": 0.2,
-      "spd": 0.4
-    },
+    "signature": { "key": "heat", "label": "Heat", "max": 5, "gainPerTurn": 0 },
+    "signatureAbilities": ["pyre", "furnace"],
+    "baseStats": { "hp": 20, "atk": 9, "def": 3, "spd": 6 },
+    "growth": { "hp": 1.0, "atk": 2.4, "def": 0.6, "spd": 1.0 },
     "abilityPool": [
       "pyre",
-      "heavy_blow",
-      "quick_jab",
+      "furnace",
+      "strike",
       "fury",
-      "reckless",
-      "self_immolate",
-      "double_strike",
-      "soulrend"
+      "shadow_step",
+      "focus"
     ],
     "name": "[Walked here from [[6]]]"
   },
   {
-    "species": "Tidewhelp",
-    "type": "water",
-    "starter": true,
-    "primaryPassive": "tide_guard",
-    "secondaryPassive": "second_wind",
-    "baseStats": {
-      "hp": 34,
-      "atk": 5,
-      "def": 8,
-      "spd": 4
-    },
-    "growth": {
-      "hp": 1.9,
-      "atk": 1.0,
-      "def": 1.7,
-      "spd": 0.4
-    },
-    "abilityPool": [
-      "strike",
-      "surge",
-      "drench",
-      "mend",
-      "aegis_swap",
-      "tactical_retreat",
-      "vapor_cloak"
-    ],
-    "name": "[Brother came back wrong]"
-  },
-  {
     "species": "Rivergeist",
     "type": "water",
-    "primaryPassive": "aquaveil",
+    "primaryPassive": "tideturn",
     "secondaryPassive": "serene",
-    "baseStats": {
-      "hp": 22,
-      "atk": 4,
-      "def": 5,
-      "spd": 6
-    },
-    "growth": {
-      "hp": 0.5,
-      "atk": 0.4,
-      "def": 0.6,
-      "spd": 0.6
-    },
+    "signature": { "key": "tide", "label": "Tide", "max": 2, "gainPerTurn": 1 },
+    "signatureAbilities": ["surge", "drown"],
+    "baseStats": { "hp": 22, "atk": 5, "def": 5, "spd": 7 },
+    "growth": { "hp": 1.0, "atk": 1.0, "def": 1.0, "spd": 1.4 },
     "abilityPool": [
       "surge",
+      "drown",
       "mend",
-      "quick_jab",
-      "tactical_retreat",
-      "aegis_swap",
-      "glacial_hold"
+      "strike",
+      "vapor_cloak",
+      "tactical_retreat"
     ],
     "name": "[Keeps leaving]"
   },
@@ -258,26 +274,17 @@
     "type": "water",
     "primaryPassive": "thick_hide",
     "secondaryPassive": "iron_grip",
-    "baseStats": {
-      "hp": 47,
-      "atk": 5,
-      "def": 12,
-      "spd": 3
-    },
-    "growth": {
-      "hp": 0.3,
-      "atk": 0.2,
-      "def": 0.4,
-      "spd": 0.2
-    },
+    "signature": { "key": "tide", "label": "Tide", "max": 2, "gainPerTurn": 1 },
+    "signatureAbilities": ["surge", "drown"],
+    "baseStats": { "hp": 44, "atk": 6, "def": 12, "spd": 3 },
+    "growth": { "hp": 2.4, "atk": 1.0, "def": 1.6, "spd": 0.4 },
     "abilityPool": [
       "surge",
+      "drown",
       "strike",
-      "focus",
       "stoic",
       "vapor_cloak",
-      "heavy_blow",
-      "drench"
+      "focus"
     ],
     "name": "[Husband kept her]"
   },
@@ -286,26 +293,17 @@
     "type": "water",
     "primaryPassive": "iron_will",
     "secondaryPassive": "echo_form",
-    "baseStats": {
-      "hp": 28,
-      "atk": 6,
-      "def": 7,
-      "spd": 5
-    },
-    "growth": {
-      "hp": 1.7,
-      "atk": 1.6,
-      "def": 1.6,
-      "spd": 1.6
-    },
+    "signature": { "key": "tide", "label": "Tide", "max": 2, "gainPerTurn": 1 },
+    "signatureAbilities": ["surge", "drown"],
+    "baseStats": { "hp": 30, "atk": 6, "def": 7, "spd": 5 },
+    "growth": { "hp": 1.7, "atk": 1.6, "def": 1.6, "spd": 1.4 },
     "abilityPool": [
       "surge",
-      "mend",
+      "drown",
       "strike",
-      "drench",
+      "mend",
       "focus",
-      "aegis_swap",
-      "glacial_hold"
+      "tactical_retreat"
     ],
     "name": "[Asks about the pond]"
   },
@@ -314,139 +312,54 @@
     "type": "water",
     "primaryPassive": "riposte",
     "secondaryPassive": "reflective_aura",
-    "baseStats": {
-      "hp": 24,
-      "atk": 3,
-      "def": 9,
-      "spd": 3
-    },
-    "growth": {
-      "hp": 0.5,
-      "atk": 0.2,
-      "def": 2.9,
-      "spd": 0.2
-    },
+    "signature": { "key": "tide", "label": "Tide", "max": 2, "gainPerTurn": 1 },
+    "signatureAbilities": ["surge", "drown"],
+    "baseStats": { "hp": 26, "atk": 4, "def": 9, "spd": 3 },
+    "growth": { "hp": 1.0, "atk": 0.8, "def": 2.4, "spd": 0.4 },
     "abilityPool": [
       "surge",
+      "drown",
       "strike",
-      "focus",
       "stoic",
       "vapor_cloak",
-      "glacial_hold",
-      "beacon"
+      "focus"
     ],
     "name": "[Shell that answers]"
-  },
-  {
-    "species": "Frostfin",
-    "type": "water",
-    "primaryPassive": "frostbite",
-    "secondaryPassive": "poisonous",
-    "baseStats": {
-      "hp": 24,
-      "atk": 7,
-      "def": 6,
-      "spd": 7
-    },
-    "growth": {
-      "hp": 1.0,
-      "atk": 1.7,
-      "def": 0.9,
-      "spd": 2.4
-    },
-    "abilityPool": [
-      "surge",
-      "glacial_hold",
-      "quick_jab",
-      "strike",
-      "brine_lance",
-      "tidal_pull",
-      "double_strike"
-    ],
-    "name": "[Froze waiting]"
   },
   {
     "species": "Deepmaw",
     "type": "water",
     "primaryPassive": "mortal_coil",
     "secondaryPassive": "tide_blessed",
-    "baseStats": {
-      "hp": 21,
-      "atk": 5,
-      "def": 5,
-      "spd": 4
-    },
-    "growth": {
-      "hp": 2.6,
-      "atk": 2.5,
-      "def": 1.6,
-      "spd": 1.4
-    },
+    "signature": { "key": "tide", "label": "Tide", "max": 2, "gainPerTurn": 1 },
+    "signatureAbilities": ["surge", "drown"],
+    "baseStats": { "hp": 24, "atk": 6, "def": 6, "spd": 4 },
+    "growth": { "hp": 2.2, "atk": 2.2, "def": 1.4, "spd": 1.2 },
     "abilityPool": [
       "surge",
-      "heavy_blow",
+      "drown",
       "strike",
-      "maelstrom",
-      "reckless",
-      "brine_lance",
-      "soulrend"
+      "shadow_step",
+      "fury",
+      "focus"
     ],
     "name": "[What the basement is for]"
-  },
-  {
-    "species": "Loamback",
-    "type": "grass",
-    "starter": true,
-    "primaryPassive": "photosynthesis",
-    "secondaryPassive": "spotter",
-    "baseStats": {
-      "hp": 29,
-      "atk": 6,
-      "def": 7,
-      "spd": 5
-    },
-    "growth": {
-      "hp": 1.9,
-      "atk": 1.0,
-      "def": 1.5,
-      "spd": 1.0
-    },
-    "abilityPool": [
-      "strike",
-      "bramble",
-      "focus",
-      "mend",
-      "healing_wind",
-      "verdant_slash",
-      "spore_cloud"
-    ],
-    "name": "[On the waiting list]"
   },
   {
     "species": "Sproutkin",
     "type": "grass",
     "primaryPassive": "blooming",
-    "secondaryPassive": "sentinel",
-    "baseStats": {
-      "hp": 24,
-      "atk": 5,
-      "def": 6,
-      "spd": 6
-    },
-    "growth": {
-      "hp": 0.9,
-      "atk": 0.5,
-      "def": 0.9,
-      "spd": 1.1
-    },
+    "secondaryPassive": "rooted",
+    "signature": { "key": "roots", "label": "Roots", "max": 5, "gainPerTurn": 1 },
+    "signatureAbilities": ["bramble", "overgrowth"],
+    "baseStats": { "hp": 26, "atk": 5, "def": 6, "spd": 6 },
+    "growth": { "hp": 1.4, "atk": 1.0, "def": 1.4, "spd": 1.4 },
     "abilityPool": [
       "bramble",
+      "overgrowth",
       "mend",
       "strike",
-      "focus",
       "spore_cloud",
-      "healing_wind",
-      "photonic_lash",
       "tactical_retreat"
     ],
     "name": "[Keeps opening it]"
@@ -454,27 +367,18 @@
   {
     "species": "Mosshorn",
     "type": "grass",
-    "primaryPassive": "giant_form",
-    "secondaryPassive": "twin_soul",
-    "baseStats": {
-      "hp": 29,
-      "atk": 4,
-      "def": 6,
-      "spd": 3
-    },
-    "growth": {
-      "hp": 2.9,
-      "atk": 0.4,
-      "def": 1.2,
-      "spd": 0.2
-    },
+    "primaryPassive": "rooted",
+    "secondaryPassive": "stone_skin",
+    "signature": { "key": "roots", "label": "Roots", "max": 5, "gainPerTurn": 1 },
+    "signatureAbilities": ["bramble", "overgrowth"],
+    "baseStats": { "hp": 32, "atk": 5, "def": 7, "spd": 3 },
+    "growth": { "hp": 2.4, "atk": 0.8, "def": 1.6, "spd": 0.4 },
     "abilityPool": [
       "bramble",
-      "heavy_blow",
+      "overgrowth",
       "strike",
       "stoic",
       "focus",
-      "beacon",
       "spore_cloud"
     ],
     "name": "[Moved overnight]"
@@ -482,199 +386,76 @@
   {
     "species": "Vinewyrm",
     "type": "grass",
-    "primaryPassive": "berserker",
-    "secondaryPassive": "reckless_heart",
-    "baseStats": {
-      "hp": 24,
-      "atk": 8,
-      "def": 5,
-      "spd": 6
-    },
-    "growth": {
-      "hp": 1.0,
-      "atk": 2.5,
-      "def": 0.6,
-      "spd": 1.7
-    },
+    "primaryPassive": "rooted",
+    "secondaryPassive": "swift",
+    "signature": { "key": "roots", "label": "Roots", "max": 5, "gainPerTurn": 1 },
+    "signatureAbilities": ["bramble", "overgrowth"],
+    "baseStats": { "hp": 26, "atk": 8, "def": 5, "spd": 6 },
+    "growth": { "hp": 1.2, "atk": 2.2, "def": 0.8, "spd": 1.6 },
     "abilityPool": [
       "bramble",
+      "overgrowth",
       "strike",
-      "heavy_blow",
-      "quick_jab",
-      "reckless",
-      "strangle_vine",
-      "double_strike",
-      "pivot_strike"
+      "fury",
+      "shadow_step",
+      "focus"
     ],
     "name": "[Crawled the length of the hall]"
   },
   {
     "species": "Bloomback",
     "type": "grass",
-    "primaryPassive": "verdant_soul",
-    "secondaryPassive": "rearguard",
-    "baseStats": {
-      "hp": 36,
-      "atk": 8,
-      "def": 10,
-      "spd": 4
-    },
-    "growth": {
-      "hp": 0.3,
-      "atk": 0.3,
-      "def": 0.4,
-      "spd": 0.2
-    },
+    "primaryPassive": "rooted",
+    "secondaryPassive": "verdant_soul",
+    "signature": { "key": "roots", "label": "Roots", "max": 5, "gainPerTurn": 1 },
+    "signatureAbilities": ["bramble", "overgrowth"],
+    "baseStats": { "hp": 36, "atk": 7, "def": 9, "spd": 4 },
+    "growth": { "hp": 2.0, "atk": 1.0, "def": 1.4, "spd": 0.6 },
     "abilityPool": [
       "bramble",
+      "overgrowth",
       "mend",
-      "focus",
-      "verdant_slash",
       "spore_cloud",
-      "healing_wind",
-      "heavy_blow"
+      "focus",
+      "stoic"
     ],
     "name": "[Garden in him]"
   },
   {
     "species": "Thornling",
     "type": "grass",
-    "primaryPassive": "misty_form",
+    "primaryPassive": "rooted",
     "secondaryPassive": "lucky",
-    "baseStats": {
-      "hp": 18,
-      "atk": 6,
-      "def": 4,
-      "spd": 7
-    },
-    "growth": {
-      "hp": 0.4,
-      "atk": 1.5,
-      "def": 0.5,
-      "spd": 2.0
-    },
+    "signature": { "key": "roots", "label": "Roots", "max": 5, "gainPerTurn": 1 },
+    "signatureAbilities": ["bramble", "overgrowth"],
+    "baseStats": { "hp": 18, "atk": 7, "def": 4, "spd": 7 },
+    "growth": { "hp": 0.8, "atk": 1.6, "def": 0.6, "spd": 1.8 },
     "abilityPool": [
       "bramble",
+      "overgrowth",
       "strike",
-      "quick_jab",
-      "strangle_vine",
-      "pivot_strike",
-      "double_strike"
+      "fury",
+      "shadow_step",
+      "focus"
     ],
     "name": "[Do not reach in]"
-  },
-  {
-    "species": "Hollowoak",
-    "type": "grass",
-    "primaryPassive": "hex_eater",
-    "secondaryPassive": "tag_out",
-    "baseStats": {
-      "hp": 26,
-      "atk": 4,
-      "def": 6,
-      "spd": 3
-    },
-    "growth": {
-      "hp": 2.5,
-      "atk": 0.6,
-      "def": 2.9,
-      "spd": 0.2
-    },
-    "abilityPool": [
-      "bramble",
-      "heavy_blow",
-      "mend",
-      "overgrowth",
-      "stoic",
-      "spore_cloud",
-      "beacon"
-    ],
-    "name": "[Cannot remember names]"
-  },
-  {
-    "species": "Lumenpup",
-    "type": "light",
-    "starter": true,
-    "primaryPassive": "lightbearer",
-    "secondaryPassive": "vanguard",
-    "baseStats": {
-      "hp": 26,
-      "atk": 7,
-      "def": 6,
-      "spd": 7
-    },
-    "growth": {
-      "hp": 1.7,
-      "atk": 1.7,
-      "def": 1.7,
-      "spd": 1.7
-    },
-    "abilityPool": [
-      "strike",
-      "radiance",
-      "mend",
-      "focus",
-      "sunbeam",
-      "aegis_swap",
-      "dawn_strike",
-      "vanguard_call"
-    ],
-    "name": "[Patient 0413]"
-  },
-  {
-    "species": "Aurabeast",
-    "type": "light",
-    "primaryPassive": "slow_burn",
-    "secondaryPassive": "zealot",
-    "baseStats": {
-      "hp": 21,
-      "atk": 6,
-      "def": 4,
-      "spd": 6
-    },
-    "growth": {
-      "hp": 0.7,
-      "atk": 2.8,
-      "def": 0.5,
-      "spd": 1.4
-    },
-    "abilityPool": [
-      "radiance",
-      "strike",
-      "focus",
-      "mend",
-      "sunbeam",
-      "solar_flare",
-      "dawn_strike",
-      "reckless"
-    ],
-    "name": "[Took the notes]"
   },
   {
     "species": "Dawnstag",
     "type": "light",
     "primaryPassive": "tempo",
-    "secondaryPassive": "sunforged",
-    "baseStats": {
-      "hp": 18,
-      "atk": 5,
-      "def": 3,
-      "spd": 9
-    },
-    "growth": {
-      "hp": 0.4,
-      "atk": 0.7,
-      "def": 0.3,
-      "spd": 2.9
-    },
+    "secondaryPassive": "swift",
+    "signature": { "key": "light", "label": "Light", "max": 5, "gainPerTurn": 1 },
+    "signatureAbilities": ["halo", "sunburst"],
+    "baseStats": { "hp": 18, "atk": 6, "def": 3, "spd": 9 },
+    "growth": { "hp": 0.8, "atk": 1.4, "def": 0.6, "spd": 2.4 },
     "abilityPool": [
-      "radiance",
-      "quick_jab",
-      "focus",
+      "halo",
+      "sunburst",
       "strike",
-      "dawn_strike",
-      "double_strike",
-      "pivot_strike"
+      "focus",
+      "tactical_retreat",
+      "shadow_step"
     ],
     "name": "[Firstborn]"
   },
@@ -682,26 +463,17 @@
     "species": "Halowyrm",
     "type": "light",
     "primaryPassive": "warm_blood",
-    "secondaryPassive": "pivot_master",
-    "baseStats": {
-      "hp": 29,
-      "atk": 6,
-      "def": 7,
-      "spd": 6
-    },
-    "growth": {
-      "hp": 1.7,
-      "atk": 1.0,
-      "def": 1.7,
-      "spd": 0.9
-    },
+    "secondaryPassive": "lightbearer",
+    "signature": { "key": "light", "label": "Light", "max": 5, "gainPerTurn": 1 },
+    "signatureAbilities": ["halo", "sunburst"],
+    "baseStats": { "hp": 30, "atk": 6, "def": 7, "spd": 6 },
+    "growth": { "hp": 1.7, "atk": 1.0, "def": 1.7, "spd": 1.0 },
     "abilityPool": [
-      "radiance",
-      "strike",
+      "halo",
+      "sunburst",
       "mend",
-      "sunbeam",
-      "cleansing_light",
-      "beacon",
+      "strike",
+      "focus",
       "aegis_swap"
     ],
     "name": "[Shines through her gown]"
@@ -710,172 +482,94 @@
     "species": "Glimmerfox",
     "type": "light",
     "primaryPassive": "glass_cannon",
-    "secondaryPassive": "doubling_down",
-    "baseStats": {
-      "hp": 16,
-      "atk": 6,
-      "def": 3,
-      "spd": 10
-    },
-    "growth": {
-      "hp": 0.3,
-      "atk": 1.6,
-      "def": 0.3,
-      "spd": 2.7
-    },
+    "secondaryPassive": "lucky",
+    "signature": { "key": "light", "label": "Light", "max": 5, "gainPerTurn": 1 },
+    "signatureAbilities": ["halo", "sunburst"],
+    "baseStats": { "hp": 18, "atk": 7, "def": 3, "spd": 10 },
+    "growth": { "hp": 0.6, "atk": 1.6, "def": 0.4, "spd": 2.4 },
     "abilityPool": [
-      "radiance",
-      "quick_jab",
+      "halo",
+      "sunburst",
       "strike",
-      "focus",
-      "dawn_strike",
-      "pivot_strike",
       "shadow_step",
-      "glowing_mark"
+      "fury",
+      "focus"
     ],
     "name": "[Dog that did not]"
-  },
-  {
-    "species": "Shadowmaw",
-    "type": "dark",
-    "primaryPassive": "shadowforged",
-    "secondaryPassive": "spite",
-    "baseStats": {
-      "hp": 18,
-      "atk": 8,
-      "def": 3,
-      "spd": 7
-    },
-    "growth": {
-      "hp": 0.4,
-      "atk": 2.9,
-      "def": 0.3,
-      "spd": 1.8
-    },
-    "abilityPool": [
-      "shade",
-      "strike",
-      "heavy_blow",
-      "fury",
-      "umbral_slash",
-      "soulrend",
-      "reckless",
-      "eclipse_slash"
-    ],
-    "name": "[Heard us]"
   },
   {
     "species": "Voidling",
     "type": "dark",
     "primaryPassive": "cornered",
-    "secondaryPassive": "dreadful",
-    "baseStats": {
-      "hp": 13,
-      "atk": 9,
-      "def": 2,
-      "spd": 8
-    },
-    "growth": {
-      "hp": 0.2,
-      "atk": 2.7,
-      "def": 0.2,
-      "spd": 2.0
-    },
+    "secondaryPassive": "consumer",
+    "signature": { "key": "marks", "label": "Marks", "max": 4, "gainPerTurn": 0 },
+    "signatureAbilities": ["mark_shade", "execute"],
+    "baseStats": { "hp": 16, "atk": 9, "def": 3, "spd": 8 },
+    "growth": { "hp": 0.8, "atk": 2.4, "def": 0.6, "spd": 2.0 },
     "abilityPool": [
-      "shade",
-      "quick_jab",
-      "fury",
+      "mark_shade",
+      "execute",
       "strike",
-      "soulrend",
-      "shadow_step",
-      "witherer",
-      "double_strike"
+      "shade",
+      "fury",
+      "shadow_step"
     ],
     "name": "[Thing in the closet]"
   },
   {
     "species": "Nightcreep",
     "type": "dark",
-    "primaryPassive": "adrenal_surge",
-    "secondaryPassive": "scavenger",
-    "baseStats": {
-      "hp": 21,
-      "atk": 6,
-      "def": 4,
-      "spd": 7
-    },
-    "growth": {
-      "hp": 1.4,
-      "atk": 1.8,
-      "def": 0.9,
-      "spd": 1.9
-    },
+    "primaryPassive": "consumer",
+    "secondaryPassive": "swift",
+    "signature": { "key": "marks", "label": "Marks", "max": 4, "gainPerTurn": 0 },
+    "signatureAbilities": ["mark_shade", "execute"],
+    "baseStats": { "hp": 22, "atk": 7, "def": 4, "spd": 7 },
+    "growth": { "hp": 1.4, "atk": 1.8, "def": 1.0, "spd": 1.8 },
     "abilityPool": [
-      "shade",
+      "mark_shade",
+      "execute",
       "strike",
-      "quick_jab",
-      "fury",
-      "umbral_slash",
+      "shade",
       "shadow_step",
-      "phoenix_dive",
-      "tactical_retreat"
+      "fury"
     ],
     "name": "[Arrived after [[6]]]"
   },
   {
     "species": "Wraithfin",
     "type": "dark",
-    "primaryPassive": "dark_pact",
-    "secondaryPassive": "status_lord",
-    "baseStats": {
-      "hp": 21,
-      "atk": 5,
-      "def": 4,
-      "spd": 6
-    },
-    "growth": {
-      "hp": 2.1,
-      "atk": 2.5,
-      "def": 1.4,
-      "spd": 1.8
-    },
+    "primaryPassive": "consumer",
+    "secondaryPassive": "iron_will",
+    "signature": { "key": "marks", "label": "Marks", "max": 4, "gainPerTurn": 0 },
+    "signatureAbilities": ["mark_shade", "execute"],
+    "baseStats": { "hp": 22, "atk": 6, "def": 4, "spd": 6 },
+    "growth": { "hp": 2.0, "atk": 2.2, "def": 1.4, "spd": 1.6 },
     "abilityPool": [
-      "shade",
+      "mark_shade",
+      "execute",
       "strike",
+      "shade",
       "fury",
-      "heavy_blow",
-      "soulrend",
-      "hex",
-      "eclipse_slash",
-      "cursed_bond"
+      "focus"
     ],
     "name": "[Surviving twin]"
   },
   {
     "species": "Umbragale",
     "type": "dark",
-    "primaryPassive": "eldritch_sight",
-    "secondaryPassive": "prepared",
-    "baseStats": {
-      "hp": 26,
-      "atk": 6,
-      "def": 6,
-      "spd": 5
-    },
-    "growth": {
-      "hp": 2.7,
-      "atk": 1.7,
-      "def": 1.9,
-      "spd": 0.7
-    },
+    "primaryPassive": "consumer",
+    "secondaryPassive": "shadowforged",
+    "signature": { "key": "marks", "label": "Marks", "max": 4, "gainPerTurn": 0 },
+    "signatureAbilities": ["mark_shade", "execute"],
+    "baseStats": { "hp": 26, "atk": 6, "def": 6, "spd": 5 },
+    "growth": { "hp": 2.2, "atk": 1.8, "def": 1.6, "spd": 0.8 },
     "abilityPool": [
-      "shade",
+      "mark_shade",
+      "execute",
       "strike",
-      "heavy_blow",
-      "umbral_slash",
-      "witherer",
-      "hex",
-      "cursed_bond"
+      "shade",
+      "stoic",
+      "focus"
     ],
     "name": "[House that visits her]"
   }

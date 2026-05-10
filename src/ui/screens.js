@@ -10,7 +10,7 @@ import { generateEnemyParty, partyAvgLevel } from '../encounter.js';
 import { creatureCardEl } from './cards.js';
 import { beginBattle } from '../combat/battle.js';
 import { makeChild, finalizeBreed } from '../breeding.js';
-import { render, advanceWave, routeAfterAftermath } from './render.js';
+import { render, advanceWave, routeAfterAftermath, proceedFromDepth } from './render.js';
 import { parseProse } from './textCorrupt.js';
 import { acquireRelic, pickRecordsCandidates, tendCreature, generatePathChoices, applyOwnedPermanentsToCreature } from '../relics.js';
 
@@ -527,25 +527,13 @@ function pathDescriptions(kind) {
 
 function enterPath(kind) {
   state.pathChoices = null;
-  if (kind === 'records') {
-    state.pendingRoomKind = 'battle';
-    state.screen = 'records';
-    render();
-    return;
-  }
-  if (kind === 'tend') {
-    state.pendingRoomKind = 'battle';
-    state.screen = 'tend';
-    render();
-    return;
-  }
   state.pendingRoomKind = kind;
   advanceWave();
 }
 
 // ── records hall ─────────────────────────────────────────────────────
 export function renderRecords() {
-  const page = docPage(`// Records · descent ${pad2(state.wave + 1)} · paperwork`);
+  const page = docPage(`// Records · descent ${pad2(state.wave)} · paperwork`);
   const intro = el('div', { class: 'doc-prose' });
   intro.innerHTML = parseProse(
     'The hall is wider than the building. Three files have been left where I will see them.'
@@ -587,21 +575,21 @@ export function renderRecords() {
       sfx('capture');
       acquireRelic(r);
       state.recordsCandidates = null;
-      advanceWave();
+      proceedFromDepth();
     });
     list.appendChild(card);
   }
   page.appendChild(list);
   page.appendChild(actionRow(docButton('Take nothing', () => {
     state.recordsCandidates = null;
-    advanceWave();
+    proceedFromDepth();
   }, 'small')));
   app().appendChild(page);
 }
 
 // ── tend (treatment room) ────────────────────────────────────────────
 export function renderTend() {
-  const page = docPage(`// Treatment · descent ${pad2(state.wave + 1)} · the quiet room`);
+  const page = docPage(`// Treatment · descent ${pad2(state.wave)} · the quiet room`);
   const intro = el('div', { class: 'doc-prose' });
   intro.innerHTML = parseProse(
     'The room is quieter than the others. One of mine grows steadier here. !!The cost is the room.!!'
@@ -657,7 +645,7 @@ export function renderTend() {
     tendCreature(ts.selectedCreature, ts.selectedStat, tendChoices[ts.selectedStat]);
     state.tendState = null;
     sfx('heal');
-    advanceWave();
+    proceedFromDepth();
   });
   if (!ready) goBtn.disabled = true;
   page.appendChild(actionRow(goBtn));
