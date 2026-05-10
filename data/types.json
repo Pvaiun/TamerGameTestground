@@ -1,0 +1,85 @@
+{
+  "TYPES": [
+    "fire",
+    "water",
+    "grass",
+    "light",
+    "dark"
+  ],
+  "TYPE_CHART": {
+    "fire": {
+      "fire": 1,
+      "water": 1,
+      "grass": 1.25,
+      "light": 1,
+      "dark": 1
+    },
+    "water": {
+      "fire": 1.25,
+      "water": 1,
+      "grass": 1,
+      "light": 1,
+      "dark": 1
+    },
+    "grass": {
+      "fire": 1,
+      "water": 1.25,
+      "grass": 1,
+      "light": 1,
+      "dark": 1
+    },
+    "light": {
+      "fire": 1,
+      "water": 1,
+      "grass": 1,
+      "light": 1,
+      "dark": 1.25
+    },
+    "dark": {
+      "fire": 1,
+      "water": 1,
+      "grass": 1,
+      "light": 1.25,
+      "dark": 1
+    }
+  },
+  "TYPE_PALETTE": {
+    "fire": {
+      "primary": "#d94a3a",
+      "secondary": "#ff8855",
+      "accent": "#ffcc66",
+      "dark": "#7a2010"
+    },
+    "water": {
+      "primary": "#3a78d4",
+      "secondary": "#66aaee",
+      "accent": "#aaddff",
+      "dark": "#1a3a7a"
+    },
+    "grass": {
+      "primary": "#4aaa55",
+      "secondary": "#7acc88",
+      "accent": "#ccee99",
+      "dark": "#1a4a20"
+    },
+    "light": {
+      "primary": "#e8c870",
+      "secondary": "#fff0aa",
+      "accent": "#fffadd",
+      "dark": "#7a6a30"
+    },
+    "dark": {
+      "primary": "#7a4a9a",
+      "secondary": "#aa77cc",
+      "accent": "#ddaaff",
+      "dark": "#3a1a5a"
+    }
+  },
+  "TYPE_LABELS": {
+    "fire": "ember",
+    "water": "brine",
+    "grass": "loam",
+    "light": "halo",
+    "dark": "hush"
+  }
+}

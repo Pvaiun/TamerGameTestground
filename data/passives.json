@@ -1,0 +1,1015 @@
+{
+  "brutal": {
+    "name": "Unmeasured",
+    "desc": "+50% attack.",
+    "triggers": [
+      {
+        "on": "stat_query",
+        "if": {
+          "queryStat": "atk"
+        },
+        "effect": {
+          "type": "stat_mult",
+          "stat": "atk",
+          "value": 1.5
+        }
+      }
+    ]
+  },
+  "swift": {
+    "name": "Already moved",
+    "desc": "+50% speed.",
+    "triggers": [
+      {
+        "on": "stat_query",
+        "if": {
+          "queryStat": "spd"
+        },
+        "effect": {
+          "type": "stat_mult",
+          "stat": "spd",
+          "value": 1.5
+        }
+      }
+    ]
+  },
+  "thick_hide": {
+    "name": "Brought weight",
+    "desc": "+50% hp at battle start.",
+    "triggers": [
+      {
+        "on": "battle_start",
+        "effect": {
+          "type": "heal_self",
+          "percent": 0.5
+        }
+      }
+    ]
+  },
+  "tide_guard": {
+    "name": "Tide-known",
+    "desc": "+50% defense.",
+    "triggers": [
+      {
+        "on": "stat_query",
+        "if": {
+          "queryStat": "def"
+        },
+        "effect": {
+          "type": "stat_mult",
+          "stat": "def",
+          "value": 1.5
+        }
+      }
+    ]
+  },
+  "iron_grip": {
+    "name": "Kept grip",
+    "desc": "+30% attack and +30% defense.",
+    "triggers": [
+      {
+        "on": "stat_query",
+        "if": {
+          "queryStat": "atk"
+        },
+        "effect": {
+          "type": "stat_mult",
+          "stat": "atk",
+          "value": 1.3
+        }
+      },
+      {
+        "on": "stat_query",
+        "if": {
+          "queryStat": "def"
+        },
+        "effect": {
+          "type": "stat_mult",
+          "stat": "def",
+          "value": 1.3
+        }
+      }
+    ]
+  },
+  "glass_cannon": {
+    "name": "All forward",
+    "desc": "+75% attack, -25% defense.",
+    "triggers": [
+      {
+        "on": "stat_query",
+        "if": {
+          "queryStat": "atk"
+        },
+        "effect": {
+          "type": "stat_mult",
+          "stat": "atk",
+          "value": 1.75
+        }
+      },
+      {
+        "on": "stat_query",
+        "if": {
+          "queryStat": "def"
+        },
+        "effect": {
+          "type": "stat_mult",
+          "stat": "def",
+          "value": 0.75
+        }
+      }
+    ]
+  },
+  "stone_skin": {
+    "name": "Unregistered",
+    "desc": "Take 3 less damage from every hit (min 1).",
+    "triggers": [
+      {
+        "on": "defense_query",
+        "effect": {
+          "type": "flat_dmg_reduction",
+          "value": 3
+        }
+      }
+    ]
+  },
+  "bulwark": {
+    "name": "Unmoved",
+    "desc": "Take 30% less damage from non-element attacks.",
+    "triggers": [
+      {
+        "on": "defense_query",
+        "effect": {
+          "type": "non_elem_dmg_mult",
+          "value": 0.7
+        }
+      }
+    ]
+  },
+  "giant_form": {
+    "name": "Larger today",
+    "desc": "+20% attack, -20% speed.",
+    "triggers": [
+      {
+        "on": "stat_query",
+        "if": {
+          "queryStat": "atk"
+        },
+        "effect": {
+          "type": "stat_mult",
+          "stat": "atk",
+          "value": 1.2
+        }
+      },
+      {
+        "on": "stat_query",
+        "if": {
+          "queryStat": "spd"
+        },
+        "effect": {
+          "type": "stat_mult",
+          "stat": "spd",
+          "value": 0.8
+        }
+      }
+    ]
+  },
+  "inferno_heart": {
+    "name": "Kept hot inside",
+    "desc": "+50% damage with fire abilities.",
+    "triggers": [
+      {
+        "on": "power_query",
+        "if": {
+          "attackElement": "fire"
+        },
+        "effect": {
+          "type": "power_mult",
+          "value": 1.5
+        }
+      }
+    ]
+  },
+  "tide_blessed": {
+    "name": "Salt-kept",
+    "desc": "+50% damage with water abilities.",
+    "triggers": [
+      {
+        "on": "power_query",
+        "if": {
+          "attackElement": "water"
+        },
+        "effect": {
+          "type": "power_mult",
+          "value": 1.5
+        }
+      }
+    ]
+  },
+  "verdant_soul": {
+    "name": "Green-fed",
+    "desc": "+50% damage with grass abilities.",
+    "triggers": [
+      {
+        "on": "power_query",
+        "if": {
+          "attackElement": "grass"
+        },
+        "effect": {
+          "type": "power_mult",
+          "value": 1.5
+        }
+      }
+    ]
+  },
+  "sunforged": {
+    "name": "Made bright",
+    "desc": "+50% damage with light abilities.",
+    "triggers": [
+      {
+        "on": "power_query",
+        "if": {
+          "attackElement": "light"
+        },
+        "effect": {
+          "type": "power_mult",
+          "value": 1.5
+        }
+      }
+    ]
+  },
+  "shadowforged": {
+    "name": "Made unlit",
+    "desc": "+50% damage with dark abilities.",
+    "triggers": [
+      {
+        "on": "power_query",
+        "if": {
+          "attackElement": "dark"
+        },
+        "effect": {
+          "type": "power_mult",
+          "value": 1.5
+        }
+      }
+    ]
+  },
+  "predators_edge": {
+    "name": "Soft-side knower",
+    "desc": "+50% damage when target is below 50% hp.",
+    "triggers": [
+      {
+        "on": "power_query",
+        "if": {
+          "targetHpFrac": "<0.5"
+        },
+        "effect": {
+          "type": "power_mult",
+          "value": 1.5
+        }
+      }
+    ]
+  },
+  "tempo": {
+    "name": "Unread meter",
+    "desc": "+25% damage while faster than opponent.",
+    "triggers": [
+      {
+        "on": "power_query",
+        "if": {
+          "selfFasterThanTarget": true
+        },
+        "effect": {
+          "type": "power_mult",
+          "value": 1.25
+        }
+      }
+    ]
+  },
+  "lightbearer": {
+    "name": "Ahead of glow",
+    "desc": "+25% all stats while above 80% hp.",
+    "triggers": [
+      {
+        "on": "stat_query",
+        "if": {
+          "selfHpFrac": ">0.8"
+        },
+        "effect": {
+          "type": "all_stat_mult",
+          "value": 1.25
+        }
+      }
+    ]
+  },
+  "cornered": {
+    "name": "Worse trapped",
+    "desc": "+50% damage while below 30% hp.",
+    "triggers": [
+      {
+        "on": "power_query",
+        "if": {
+          "selfHpFrac": "<0.3"
+        },
+        "effect": {
+          "type": "power_mult",
+          "value": 1.5
+        }
+      }
+    ]
+  },
+  "pristine": {
+    "name": "Unmarked",
+    "desc": "First attack of battle deals double damage.",
+    "triggers": [
+      {
+        "on": "power_query",
+        "consumesOn": "battle",
+        "effect": {
+          "type": "power_mult",
+          "value": 2.0
+        }
+      }
+    ]
+  },
+  "photosynthesis": {
+    "name": "Light-fed",
+    "desc": "Heal 6% max hp at start of every turn.",
+    "triggers": [
+      {
+        "on": "turn_start",
+        "effect": {
+          "type": "heal_self",
+          "percent": 0.06
+        }
+      }
+    ]
+  },
+  "soul_drain": {
+    "name": "Takes a piece",
+    "desc": "Heal 25% of damage you deal.",
+    "triggers": [
+      {
+        "on": "hit_dealt",
+        "effect": {
+          "type": "heal_self_pct_dmg",
+          "percent": 0.25
+        }
+      }
+    ]
+  },
+  "blooming": {
+    "name": "Flowers from wound",
+    "desc": "+50% effectiveness from any healing.",
+    "triggers": [
+      {
+        "on": "heal_query",
+        "effect": {
+          "type": "heal_mult",
+          "value": 1.5
+        }
+      }
+    ]
+  },
+  "vampire_touch": {
+    "name": "Small drinker",
+    "desc": "Heals are +50% stronger and can overheal to 125% max hp.",
+    "triggers": [
+      {
+        "on": "heal_query",
+        "effect": {
+          "type": "heal_mult",
+          "value": 1.5
+        }
+      },
+      {
+        "on": "heal_query",
+        "effect": {
+          "type": "overheal_cap",
+          "value": 1.25
+        }
+      }
+    ]
+  },
+  "aquaveil": {
+    "name": "Water-hidden",
+    "desc": "Once per battle, when you would drop below 50% hp, heal to 50%.",
+    "triggers": [
+      {
+        "on": "hit_taken",
+        "if": {
+          "selfHpFrac": "<0.5"
+        },
+        "consumesOn": "battle",
+        "effect": {
+          "type": "restore_hp_to",
+          "percent": 0.5
+        }
+      }
+    ]
+  },
+  "second_wind": {
+    "name": "Stands once more",
+    "desc": "When swapping in, heal 15% max hp.",
+    "triggers": [
+      {
+        "on": "swap_in",
+        "effect": {
+          "type": "heal_self",
+          "percent": 0.15
+        }
+      }
+    ]
+  },
+  "warm_blood": {
+    "name": "Warm-blooded",
+    "desc": "Immune to Fevering.",
+    "triggers": [
+      {
+        "on": "status_block",
+        "effect": {
+          "type": "block_statuses",
+          "statuses": [
+            "burn"
+          ]
+        }
+      }
+    ]
+  },
+  "riposte": {
+    "name": "Strikes back",
+    "desc": "When hit, deal 25% of damage taken back.",
+    "triggers": [
+      {
+        "on": "hit_taken",
+        "effect": {
+          "type": "reflect_damage",
+          "percent": 0.25
+        }
+      }
+    ]
+  },
+  "iron_will": {
+    "name": "Unbending",
+    "desc": "Immune to Drained, Sedated, and Broken.",
+    "triggers": [
+      {
+        "on": "status_block",
+        "effect": {
+          "type": "block_statuses",
+          "statuses": [
+            "soaking",
+            "dazed",
+            "cursed"
+          ]
+        }
+      }
+    ]
+  },
+  "hex_eater": {
+    "name": "Swallows what is laid",
+    "desc": "Cleanse one debuff at start of each turn.",
+    "triggers": [
+      {
+        "on": "turn_start",
+        "effect": {
+          "type": "cleanse_self_step",
+          "step": 0.15
+        }
+      }
+    ]
+  },
+  "featherweight": {
+    "name": "Weighs less than",
+    "desc": "Win all speed and priority ties.",
+    "triggers": [
+      {
+        "on": "tie_break",
+        "effect": {
+          "type": "tie_break_win"
+        }
+      }
+    ]
+  },
+  "adrenal_surge": {
+    "name": "Opens at the wound",
+    "desc": "When taking a hit for 30%+ max hp, gain +30% attack for 3 turns.",
+    "triggers": [
+      {
+        "on": "hit_taken",
+        "if": {
+          "dmgFrac": ">=0.3"
+        },
+        "effect": {
+          "type": "buff_self",
+          "statMods": {
+            "atk": 0.3
+          },
+          "turns": 3
+        }
+      }
+    ]
+  },
+  "spite": {
+    "name": "Dies louder",
+    "desc": "When you take a critical hit, gain +30% attack for 3 turns.",
+    "triggers": [
+      {
+        "on": "hit_taken",
+        "if": {
+          "isCrit": true
+        },
+        "effect": {
+          "type": "buff_self",
+          "statMods": {
+            "atk": 0.3
+          },
+          "turns": 3
+        }
+      }
+    ]
+  },
+  "reflective_aura": {
+    "name": "Returns what is given",
+    "desc": "Reflect 15% of all damage taken to the attacker.",
+    "triggers": [
+      {
+        "on": "hit_taken",
+        "effect": {
+          "type": "reflect_damage",
+          "percent": 0.15
+        }
+      }
+    ]
+  },
+  "counterstance": {
+    "name": "Waits for the strike",
+    "desc": "When bracing, reflect 50% of damage taken.",
+    "triggers": [
+      {
+        "on": "hit_taken",
+        "if": {
+          "bracing": true
+        },
+        "effect": {
+          "type": "reflect_damage",
+          "percent": 0.5
+        }
+      }
+    ]
+  },
+  "pyromancer": {
+    "name": "Fire listens",
+    "desc": "+50% damage to Fevering targets.",
+    "triggers": [
+      {
+        "on": "power_query",
+        "if": {
+          "targetHasStatus": "burn"
+        },
+        "effect": {
+          "type": "power_mult",
+          "value": 1.5
+        }
+      }
+    ]
+  },
+  "frostbite": {
+    "name": "Cold spreads",
+    "desc": "On hit: target -10% speed (stacking).",
+    "triggers": [
+      {
+        "on": "hit_dealt",
+        "effect": {
+          "type": "buff_target",
+          "statMods": {
+            "spd": -0.1
+          }
+        }
+      }
+    ]
+  },
+  "poisonous": {
+    "name": "Leaves residue",
+    "desc": "On hit: 30% chance to apply 1 stack of Drained.",
+    "triggers": [
+      {
+        "on": "hit_dealt",
+        "effect": {
+          "type": "apply_status",
+          "status": "soaking",
+          "target": "enemy",
+          "chance": 0.3
+        }
+      }
+    ]
+  },
+  "curse_weaver": {
+    "name": "Speaks small wrongnesses",
+    "desc": "On hit: also apply 1 turn of Sedated.",
+    "triggers": [
+      {
+        "on": "hit_dealt",
+        "effect": {
+          "type": "apply_status",
+          "status": "dazed",
+          "target": "enemy"
+        }
+      }
+    ]
+  },
+  "status_lord": {
+    "name": "Deepens what they lay",
+    "desc": "+30% damage for each unique status on the opponent.",
+    "triggers": [
+      {
+        "on": "power_query",
+        "effect": {
+          "type": "power_mult_per_status",
+          "perStatus": 0.3
+        }
+      }
+    ]
+  },
+  "vanguard": {
+    "name": "First into the room",
+    "desc": "On swap-in: gain +50% attack.",
+    "triggers": [
+      {
+        "on": "swap_in",
+        "effect": {
+          "type": "buff_self",
+          "statMods": {
+            "atk": 0.5
+          }
+        }
+      }
+    ]
+  },
+  "sentinel": {
+    "name": "Does not leave",
+    "desc": "While on bench, heal 5% max hp per turn.",
+    "triggers": [
+      {
+        "on": "bench_tick",
+        "effect": {
+          "type": "heal_self",
+          "percent": 0.05
+        }
+      }
+    ]
+  },
+  "tag_out": {
+    "name": "Takes the marks",
+    "desc": "When this creature swaps out, the incoming ally is cleansed.",
+    "triggers": [
+      {
+        "on": "swap_out",
+        "effect": {
+          "type": "cleanse_target"
+        }
+      }
+    ]
+  },
+  "rearguard": {
+    "name": "Covers what cannot",
+    "desc": "On bench, gain +25% all stats.",
+    "triggers": [
+      {
+        "on": "stat_query",
+        "if": {
+          "onBench": true
+        },
+        "effect": {
+          "type": "all_stat_mult",
+          "value": 1.25
+        }
+      }
+    ]
+  },
+  "pivot_master": {
+    "name": "Turns without warning",
+    "desc": "Broken-on-swap damage is halved when this creature swaps out.",
+    "triggers": [
+      {
+        "on": "swap_out",
+        "effect": {
+          "type": "custom",
+          "impl": "pivotMasterReduceCursedSwap"
+        }
+      }
+    ]
+  },
+  "spotter": {
+    "name": "Sees the small ones",
+    "desc": "Bench ally takes 30% less damage from start-of-turn ticks.",
+    "triggers": [
+      {
+        "on": "bench_tick",
+        "if": {
+          "onBench": true
+        },
+        "effect": {
+          "type": "custom",
+          "impl": "spotterTickMult"
+        }
+      }
+    ]
+  },
+  "twin_soul": {
+    "name": "Answers with two voices",
+    "desc": "Buffs you apply also apply 50% strength to the bench ally.",
+    "triggers": [
+      {
+        "on": "hit_dealt",
+        "effect": {
+          "type": "custom",
+          "impl": "twinSoul"
+        }
+      }
+    ]
+  },
+  "dark_pact": {
+    "name": "Spends what cannot be paid",
+    "desc": "Lose 25% max hp at battle start. +50% attack for the rest of the battle.",
+    "triggers": [
+      {
+        "on": "battle_start",
+        "effect": {
+          "type": "hp_cost_self",
+          "percent": 0.25
+        }
+      },
+      {
+        "on": "stat_query",
+        "if": {
+          "queryStat": "atk"
+        },
+        "effect": {
+          "type": "stat_mult",
+          "stat": "atk",
+          "value": 1.5
+        }
+      }
+    ]
+  },
+  "mortal_coil": {
+    "name": "Knots around the strike",
+    "desc": "Below 25% hp: +50% attack and +50% speed.",
+    "triggers": [
+      {
+        "on": "stat_query",
+        "if": {
+          "selfHpFrac": "<0.25",
+          "queryStat": "atk"
+        },
+        "effect": {
+          "type": "stat_mult",
+          "stat": "atk",
+          "value": 1.5
+        }
+      },
+      {
+        "on": "stat_query",
+        "if": {
+          "selfHpFrac": "<0.25",
+          "queryStat": "spd"
+        },
+        "effect": {
+          "type": "stat_mult",
+          "stat": "spd",
+          "value": 1.5
+        }
+      }
+    ]
+  },
+  "slow_burn": {
+    "name": "Warms longer",
+    "desc": "Each turn you survive, +10% attack (stacking, max 5).",
+    "triggers": [
+      {
+        "on": "turn_start",
+        "effect": {
+          "type": "custom",
+          "impl": "slowBurnTick"
+        }
+      },
+      {
+        "on": "stat_query",
+        "if": {
+          "queryStat": "atk"
+        },
+        "effect": {
+          "type": "custom",
+          "impl": "slowBurnAtkBonus"
+        }
+      }
+    ]
+  },
+  "berserker": {
+    "name": "Worse the lower",
+    "desc": "Cannot be healed by any source. +40% attack at all times.",
+    "triggers": [
+      {
+        "on": "stat_query",
+        "if": {
+          "queryStat": "atk"
+        },
+        "effect": {
+          "type": "stat_mult",
+          "stat": "atk",
+          "value": 1.4
+        }
+      },
+      {
+        "on": "heal_query",
+        "effect": {
+          "type": "block_heal"
+        }
+      }
+    ]
+  },
+  "doubling_down": {
+    "name": "Repeats what worked",
+    "desc": "Critical hits deal 3× instead of 1.6×, only while above 50% hp.",
+    "triggers": [
+      {
+        "on": "crit_query",
+        "if": {
+          "selfHpFrac": ">0.5"
+        },
+        "effect": {
+          "type": "crit_mult",
+          "value": 3.0
+        }
+      }
+    ]
+  },
+  "misty_form": {
+    "name": "Not where they look",
+    "desc": "25% chance to fully evade any attack.",
+    "triggers": [
+      {
+        "on": "evasion_query",
+        "effect": {
+          "type": "evasion_chance",
+          "value": 0.25
+        }
+      }
+    ]
+  },
+  "eldritch_sight": {
+    "name": "Sees what should not",
+    "desc": "Your attacks ignore the type chart — always 1× damage.",
+    "triggers": [
+      {
+        "on": "type_chart_query",
+        "effect": {
+          "type": "type_chart_bypass"
+        }
+      }
+    ]
+  },
+  "reckless_heart": {
+    "name": "Does not save themselves",
+    "desc": "Self-damage from your own moves is reduced by 50%.",
+    "triggers": [
+      {
+        "on": "self_damage_query",
+        "effect": {
+          "type": "self_dmg_mult",
+          "value": 0.5
+        }
+      }
+    ]
+  },
+  "zealot": {
+    "name": "Believes too hard",
+    "desc": "After using a buff, your next attack deals +50% damage.",
+    "triggers": [
+      {
+        "on": "power_query",
+        "effect": {
+          "type": "custom",
+          "impl": "zealotConsume"
+        }
+      }
+    ]
+  },
+  "patient_hunter": {
+    "name": "Waits longer than needed",
+    "desc": "Each turn without attacking, your next attack hits 50% harder (max 3 stacks).",
+    "triggers": [
+      {
+        "on": "turn_start",
+        "effect": {
+          "type": "custom",
+          "impl": "patientHunterTick"
+        }
+      },
+      {
+        "on": "power_query",
+        "effect": {
+          "type": "custom",
+          "impl": "patientHunterConsume"
+        }
+      }
+    ]
+  },
+  "scavenger": {
+    "name": "Takes from the finished",
+    "desc": "When opponent uses a buff, you also gain a copy.",
+    "triggers": [
+      {
+        "on": "hit_taken",
+        "effect": {
+          "type": "custom",
+          "impl": "scavengerCopyBuff"
+        }
+      }
+    ]
+  },
+  "echo_form": {
+    "name": "Repeats the last sound",
+    "desc": "Apply +25% attack and +25% defense to self every turn.",
+    "triggers": [
+      {
+        "on": "turn_start",
+        "effect": {
+          "type": "buff_self",
+          "statMods": {
+            "atk": 0.25,
+            "def": 0.25
+          }
+        }
+      }
+    ]
+  },
+  "dreadful": {
+    "name": "Do not look at them",
+    "desc": "On battle start: enemy active loses 15% max hp.",
+    "triggers": [
+      {
+        "on": "battle_start",
+        "effect": {
+          "type": "damage_target",
+          "percent": 0.15
+        }
+      }
+    ]
+  },
+  "prepared": {
+    "name": "Knows what is coming",
+    "desc": "Enter battle with +1 stack of Drained on the enemy active.",
+    "triggers": [
+      {
+        "on": "battle_start",
+        "effect": {
+          "type": "apply_status",
+          "status": "soaking",
+          "target": "enemy"
+        }
+      }
+    ]
+  },
+  "serene": {
+    "name": "Shows nothing",
+    "desc": "Immune to Sedated.",
+    "triggers": [
+      {
+        "on": "status_block",
+        "effect": {
+          "type": "block_statuses",
+          "statuses": [
+            "dazed"
+          ]
+        }
+      }
+    ]
+  },
+  "lucky": {
+    "name": "The dice slip",
+    "desc": "Crit chance doubled (10% → 20%).",
+    "triggers": [
+      {
+        "on": "crit_query",
+        "effect": {
+          "type": "crit_chance_set",
+          "value": 0.2
+        }
+      }
+    ]
+  },
+  "savage": {
+    "name": "Does not stop",
+    "desc": "Critical hits deal +50% extra damage.",
+    "triggers": [
+      {
+        "on": "crit_query",
+        "effect": {
+          "type": "crit_bonus_mult",
+          "value": 1.5
+        }
+      }
+    ]
+  }
+}

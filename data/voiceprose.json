@@ -1,0 +1,461 @@
+{
+  "_format": {
+    "note": "Patient-file prose for the dossier and battle log. Inline markup: ~~strike~~ for double-strike, [[N]] for an N-char redaction bar, **gold** for the gold accent (rare, on quietly charged words), !!text!! for blood-red text (warnings, refusals, the most charged moments). All prose is sentence case. Patient names appear in [brackets] in the templates. Subtitles + notes are written as institutional patient files in third-person clinical voice (she/he/they/it as fits each patient). Ability flavor + use/hit lines + passive voice prose use neutral they/them since these can transfer between creatures via breeding.",
+    "lookup": "Dossier reads: subtitles[species] || subtitles[type]; notes[species] || notes[type]. Battle log reads: actions[abilityKey].use || actionDefaults[element].use; same for hit/flavor. effectDefaults[kind] is consulted when an ability has no damage. afflictions[statusKey].apply / .tick are read on apply / per-turn-tick. noteAppends[species][wave] is appended to the species' notes for waves <= state.wave (currently used only by the protagonist, species 'Lumenpup').",
+    "templates": "{actor} = name of the doer. {target} = name of the receiver. {name} = ability display name. {status} = affliction name."
+  },
+  "subtitles": {
+    "fire": "Subject runs hot. Cause undetermined.",
+    "water": "Subject is wet through. The room is dry.",
+    "grass": "Subject grows in here. It should not.",
+    "light": "Subject lights what is around it. Not warmly.",
+    "dark": "Subject is hard to look at. Staff prefer not to.",
+    "Emberkin": "The mother has not left.",
+    "Ashmaw": "She has not stopped eating since admission.",
+    "Cinderling": "The rest of the family was indoors.",
+    "Pyrelord": "He still presides.",
+    "Magmaw": "He says it was already open.",
+    "Soothlick": "Other patients have stopped reporting it.",
+    "Charnel": "She did not stop when staff approached.",
+    "Tidewhelp": "His brother insists it is him.",
+    "Rivergeist": "She is found in the same hallway each time.",
+    "Brineback": "He brought it in himself. We took it from him.",
+    "Mireling": "There is no pond on the grounds.",
+    "Coralhusk": "She responds to her name. Nothing else.",
+    "Frostfin": "She was found on the bench after.",
+    "Deepmaw": "Staff are reminded not to go down.",
+    "Loamback": "She has been waiting since 1981.",
+    "Sproutkin": "Staff have stopped re-stitching.",
+    "Mosshorn": "He has been still since 1972.",
+    "Vinewyrm": "She refuses to use the legs.",
+    "Bloomback": "He says it is **growing in nicely**.",
+    "Thornling": "Three orderlies. So far.",
+    "Hollowoak": "She is sure she had a daughter.",
+    "Lumenpup": "Admitted [[8]] · file open",
+    "Aurabeast": "He used to work in records.",
+    "Dawnstag": "His mother is also here.",
+    "Halowyrm": "Staff use less light in her ward.",
+    "Glimmerfox": "He was eight. He doesn't blink.",
+    "Shadowmaw": "He has been quoting us back.",
+    "Voidling": "He kept it. Quiet. Mostly.",
+    "Nightcreep": "Whoever brought her did not sign in.",
+    "Wraithfin": "She insists she is the other one.",
+    "Umbragale": "She draws it on the wall every morning."
+  },
+  "notes": {
+    "fire": [
+      "Subject runs hot. Source unknown.",
+      "Staff use insulated grips. Family ask if she is in pain.",
+      "We **say no**."
+    ],
+    "water": [
+      "Subject leaves a wet trail. The trail does not evaporate.",
+      "Patient was a swimmer.",
+      "Staff have begun to dream of ~~drowning~~ being underneath."
+    ],
+    "grass": [
+      "Subject grows toward the window.",
+      "Patient does not eat.",
+      "Has been here longer than ~~records~~ files indicate."
+    ],
+    "light": [
+      "Subject is luminous in low light.",
+      "Staff have begun closing one eye when checking on her.",
+      "Reports of headaches in adjacent wards. **Several.**"
+    ],
+    "dark": [
+      "Subject is photographed only with difficulty.",
+      "Patient does not face the camera.",
+      "Orderlies prefer to enter in pairs."
+    ],
+    "Emberkin": [
+      "Subject is the size of a six-month-old. ~~Fever.~~ Cold to the touch.",
+      "Staff have not informed her [[12]]. She has not asked.",
+      "Asked when *it* could leave. Corrected herself. !!She meant herself.!!"
+    ],
+    "Ashmaw": [
+      "Subject has consumed everything offered. She continues to ask.",
+      "Found chewing on the bedframe. ~~Iron filings~~ flecks recovered from her mouth.",
+      "Asked when she was last full. !!She does not remember being.!!"
+    ],
+    "Cinderling": [
+      "Subject was located on the porch. Smoke damage minor.",
+      "Patient was eight. The rest of the family was indoors.",
+      "Refers to her brother in present tense. ~~**I** answer when she calls.~~"
+    ],
+    "Pyrelord": [
+      "Subject occupies the room as if it remains his.",
+      "Family report he has been deceased since ~~1986~~ longer.",
+      "Daughters visit. He **knows their names**."
+    ],
+    "Magmaw": [
+      "Subject sits with one ear toward the corridor.",
+      "Patient was a property surveyor. He insists the door was already open.",
+      "Asked what was beyond. ~~He described it.~~ The page is missing."
+    ],
+    "Soothlick": [
+      "Patient was a night nurse for ~~thirty~~ thirty-eight years.",
+      "Found in other patients' rooms after lights-out. She does not turn the door handle.",
+      "Patients she has tended report **sleeping better**. They do not wake all the way."
+    ],
+    "Charnel": [
+      "Subject was observed approaching the entrance for [[3]] days.",
+      "She walked the length of the road. The road is not paved.",
+      "Has not sat down since admission. ~~Refuses.~~ Cannot."
+    ],
+    "Tidewhelp": [
+      "Subject was returned to family after [[5]] missing.",
+      "The brother says it is him. The brother is sure.",
+      "Does not eat what the family eats. ~~Will not.~~ Does not appear to need to."
+    ],
+    "Rivergeist": [
+      "Patient has attempted to leave the ward seventeen times this week.",
+      "Each attempt ends in the east hallway. She does not remember the others.",
+      "Asked where she was going. Answered: !!the same place she came from.!!"
+    ],
+    "Brineback": [
+      "Subject was wrapped in linens when delivered to admissions.",
+      "Patient's husband brought it in. He has been here since.",
+      "He asks after it daily. We tell him she is ~~comfortable~~ kept."
+    ],
+    "Mireling": [
+      "Patient asks staff about the pond on the grounds. There is no pond.",
+      "She specifies a ~~stone~~ statue at the edge. None on file.",
+      "Family report she put **something** in a pond, once. They will not say what."
+    ],
+    "Coralhusk": [
+      "Subject responds when called by her given name.",
+      "No further verbal output observed in [[3]] months.",
+      "Family ask if she is still in there. We **say yes**."
+    ],
+    "Frostfin": [
+      "Patient was located on the bench outside the train station.",
+      "She had been there since her ~~husband~~ son said he would come.",
+      "Her hands have not warmed since. **Staff do not hold them long.**"
+    ],
+    "Deepmaw": [
+      "Subject is housed below the main wards by request. Not hers.",
+      "Staff entering the lower level are required to ~~sign out~~ pair up.",
+      "She has not been observed eating. The orderlies are losing weight."
+    ],
+    "Loamback": [
+      "Patient has been awaiting transfer to [[7]] since 1981.",
+      "She does not ask after it. She knows the number she is.",
+      "When called by another's name, she ~~corrects~~ accepts it."
+    ],
+    "Sproutkin": [
+      "Subject has reopened the same wound eleven times.",
+      "The bandage is replaced daily. She thanks staff. She **cannot help.**",
+      "When asked why, she answered: ~~it is healing wrong~~ it is healing."
+    ],
+    "Mosshorn": [
+      "Patient has not initiated movement since 1972.",
+      "Subject was in bed at 22:00. Subject was at the window at 06:00.",
+      "Staff present that night ~~do not~~ will not say."
+    ],
+    "Vinewyrm": [
+      "Subject is fully ambulatory. Refuses to walk.",
+      "Patient was found in the south corridor. She had crawled from the east. **It took the night.**",
+      "When stood up by orderlies, she ~~sits~~ lowers herself."
+    ],
+    "Bloomback": [
+      "Subject is observed cultivating something within the wound.",
+      "He prunes it. He calls it by !!plant names!!.",
+      "Smells of [[8]] when the room is closed."
+    ],
+    "Thornling": [
+      "Patient is small. She is mostly compliant.",
+      "Three orderlies have lost ~~fingers~~ partial use of the right hand.",
+      "She apologizes after. !!It does not appear to help her.!!"
+    ],
+    "Hollowoak": [
+      "Patient cannot recall the name of ~~her daughter~~ the one she came in with.",
+      "She has been told the room next door is empty. She continues to thank the staff for *the visits*.",
+      "When asked her own name, she gave the orderly's. ~~**I** told her it was hers.~~"
+    ],
+    "Lumenpup": [
+      "Subject arrived at the front entrance unaccompanied. No identification provided.",
+      "Vitals normal. Responds to questions. !!Does not remember the address.!!",
+      "Settled in room without resistance."
+    ],
+    "Aurabeast": [
+      "Patient was a records clerk for thirty-one years.",
+      "He continues to take notes. The page is blank.",
+      "Staff have begun to !!find their words!! in his hand."
+    ],
+    "Dawnstag": [
+      "Patient is the eldest of [[3]].",
+      "His mother is housed two doors down. She does not know him.",
+      "He was named after his ~~grandfather~~ uncle. The uncle is also here."
+    ],
+    "Halowyrm": [
+      "Subject emits visible light from the chest cavity.",
+      "Lights in her ward are kept dim. ~~For her~~ for the staff.",
+      "Family ask what is in there. We have **not** said."
+    ],
+    "Glimmerfox": [
+      "Patient was eight when it ran into the road.",
+      "He watched. The rest of the family looked away. He ~~has not~~ cannot stop.",
+      "Subject sits at his feet. He pets it. **It has been forty years.**"
+    ],
+    "Shadowmaw": [
+      "Patient occupies the room nearest the staff lounge.",
+      "He has begun returning to staff what they spoke of yesterday.",
+      "He uses our names. !!We are not sure when he learned them.!!"
+    ],
+    "Voidling": [
+      "Patient sealed it in his bedroom closet for thirty-six years.",
+      "At admission it was smaller than a fist. !!It has grown since.!!",
+      "He calls it by ~~his wife's~~ the name they would have given."
+    ],
+    "Nightcreep": [
+      "Subject was logged at the front desk after hours.",
+      "Whoever brought her did not sign in. They left her in the chair.",
+      "She refuses to identify them. ~~Or cannot.~~ The chair is !!still warm!!."
+    ],
+    "Wraithfin": [
+      "Patient was admitted alone. She insists she is the other one.",
+      "Her sister's death certificate is on file. ~~Her~~ the patient's signature is on it.",
+      "When asked who she is, she answers her sister's name. !!Each time. The same.!!"
+    ],
+    "Umbragale": [
+      "Patient draws the same house every morning. Same windows. Same number on the door.",
+      "She insists it ~~comes~~ has come for her.",
+      "The address she gave matches no facility on record. The house !!is at the address!!."
+    ]
+  },
+  "noteAppends": {
+    "Lumenpup": {
+      "3": "Has begun referring to the south corridor as *home*.",
+      "6": "Asked about the room they were admitted with. There is no such room. There never was.",
+      "9": "Has stopped responding to designation 0413. !!Responds to 0412.!! Room 0413 now **vacant again.**"
+    }
+  },
+  "passives": {
+    "brutal": "They do not measure how hard.",
+    "swift": "They were not where the blow was.",
+    "thick_hide": "They arrived heavier than admission noted.",
+    "tide_guard": "The salt knows their name.",
+    "iron_grip": "Once they have hold of a thing.",
+    "glass_cannon": "They are given. ~~Nothing~~ Little kept back.",
+    "stone_skin": "Small things do not appear in the file.",
+    "bulwark": "Indifferent strikes do not remember them.",
+    "giant_form": "Subject is **larger** than admission noted.",
+    "inferno_heart": "Something hotter has been kept inside them.",
+    "tide_blessed": "The wet does not leave them.",
+    "verdant_soul": "Whatever they eat becomes green again.",
+    "sunforged": "They were hammered out of a kinder room.",
+    "shadowforged": "Hammered out of a place the light did not reach.",
+    "predators_edge": "They know where the page is thin.",
+    "tempo": "They keep a count staff cannot follow.",
+    "lightbearer": "They walk a step before their own light.",
+    "cornered": "They are worse when they cannot leave.",
+    "pristine": "Subject has not yet been ~~touched~~ filed.",
+    "photosynthesis": "They do not eat. The window is enough.",
+    "soul_drain": "Each strike returns smaller to them.",
+    "blooming": "Where they bleed, things grow.",
+    "vampire_touch": "What is given to them, they take more of.",
+    "aquaveil": "The room rearranges to keep them.",
+    "second_wind": "They rise once they have been called.",
+    "warm_blood": "Fevering does not take in them.",
+    "riposte": "They return what is given. Smaller.",
+    "iron_will": "The marks do not stay on them.",
+    "hex_eater": "What is laid on them, they finish.",
+    "featherweight": "They arrive where the others were going.",
+    "adrenal_surge": "When struck, something in them !!opens!!.",
+    "spite": "They do not stop when they are finished.",
+    "reflective_aura": "What was meant for them finds the sender.",
+    "counterstance": "They do not move until struck.",
+    "pyromancer": "The fevering finds their hand.",
+    "frostbite": "Where they touch, the room grows slower.",
+    "poisonous": "They leave something in every wound.",
+    "curse_weaver": "Their voice names. The named forget how to act.",
+    "status_lord": "Each mark they leave makes the next deeper.",
+    "vanguard": "They enter before staff can prepare them.",
+    "sentinel": "They tend the bench when not on the floor.",
+    "tag_out": "They take the marks with them when they go.",
+    "rearguard": "Behind, they are watching for the others.",
+    "pivot_master": "They slip the names laid on them.",
+    "spotter": "They watch the bench and quiet the marks there.",
+    "twin_soul": "Whatever happens to them, the bench feels half of.",
+    "dark_pact": "They paid in admission. The strength is theirs now.",
+    "mortal_coil": "When they are finishing, they are also beginning.",
+    "slow_burn": "They are warmer in the third hour. And the fourth.",
+    "berserker": "They refuse care. !!It works for them.!!",
+    "doubling_down": "When the blow lands, it lands again.",
+    "misty_form": "They are where staff do not expect.",
+    "eldritch_sight": "Type does not apply to them. ~~Yet they apply.~~",
+    "reckless_heart": "What they give, they do not feel as much.",
+    "zealot": "They are convinced. The blow follows.",
+    "patient_hunter": "They do not move first. They do not need to.",
+    "scavenger": "What others gather, they find later.",
+    "echo_form": "Whatever the room said last, they say again.",
+    "dreadful": "Subjects who see them at admission **lose weight**.",
+    "prepared": "They have read the file before staff did.",
+    "serene": "They do not register the dose.",
+    "lucky": "What is meant to miss them does. Except when it does not.",
+    "savage": "When they find it, they finish it."
+  },
+  "afflictions": {
+    "burn": {
+      "name": "Fevering",
+      "apply": "{target} grows warm.",
+      "tick": "{target} burns."
+    },
+    "bloom": {
+      "name": "Mending",
+      "apply": "{target} is being tended.",
+      "tick": "{target}'s wounds close."
+    },
+    "soaking": {
+      "name": "Drained",
+      "apply": "{target} has been drained.",
+      "tick": "{target} cannot lift."
+    },
+    "cursed": {
+      "name": "Broken",
+      "apply": "{target} has been broken.",
+      "tick": "Moving {target} reopens it."
+    },
+    "dazed": {
+      "name": "Sedated",
+      "apply": "{target} has been dosed.",
+      "tick": "{target} does not respond."
+    }
+  },
+  "actions": {
+    "pyre": {
+      "use": "{actor} uses {name}. They lean in close.",
+      "hit": "Something is warm again."
+    },
+    "inferno": {
+      "use": "{actor} releases {name}. The room cannot hold it.",
+      "hit": "What was inside is out."
+    },
+    "self_immolate": {
+      "use": "{actor} uses {name}. They feed it from their own.",
+      "hit": "They are !!smaller!! for it."
+    },
+    "surge": {
+      "use": "{actor} uses {name}. Water rises around them.",
+      "hit": "{target} cannot tell where the room ends."
+    },
+    "maelstrom": {
+      "use": "{actor} uses {name}. The water gathers.",
+      "hit": "The water finishes."
+    },
+    "bramble": {
+      "use": "{actor} uses {name}. Where they touch, it grows.",
+      "hit": "It does not let {target} go."
+    },
+    "spore_cloud": {
+      "use": "{actor} uses {name}. They open what was held.",
+      "hit": "The air thickens."
+    },
+    "radiance": {
+      "use": "{actor} uses {name}. They turn the light on what is on them.",
+      "hit": "What was on them lifts."
+    },
+    "sunbeam": {
+      "use": "{actor} uses {name}. Light gathers along their hand.",
+      "hit": "The room !!brightens!!."
+    },
+    "shadow_step": {
+      "use": "{actor} uses {name}. They are no longer where they were.",
+      "hit": "The blow lands as they leave."
+    },
+    "soulrend": {
+      "use": "{actor} uses {name}. They give from themselves.",
+      "hit": "Something of theirs is ~~gone~~ taken."
+    },
+    "mend": {
+      "use": "{actor} uses {name}. They bandage what is open.",
+      "hit": "The wound holds."
+    },
+    "tactical_retreat": {
+      "use": "{actor} uses {name}. The bench takes the next blow.",
+      "hit": ""
+    }
+  },
+  "actionDefaults": {
+    "fire": {
+      "use": "{actor} uses {name}.",
+      "hit": "{target} catches."
+    },
+    "water": {
+      "use": "{actor} uses {name}.",
+      "hit": "{target} is overtaken."
+    },
+    "grass": {
+      "use": "{actor} uses {name}.",
+      "hit": "{target} does not pull free."
+    },
+    "light": {
+      "use": "{actor} uses {name}.",
+      "hit": "{target} flinches."
+    },
+    "dark": {
+      "use": "{actor} uses {name}.",
+      "hit": "{target} gives."
+    },
+    "neutral": {
+      "use": "{actor} uses {name}.",
+      "hit": "{target} is struck."
+    }
+  },
+  "effectDefaults": {
+    "heal": {
+      "use": "{actor} attends to themselves.",
+      "hit": "The wound holds."
+    },
+    "buff": {
+      "use": "{actor} steadies.",
+      "hit": "Their grip ~~tightens~~ holds."
+    },
+    "debuff": {
+      "use": "{actor} unsettles them.",
+      "hit": "{target} slips."
+    },
+    "swap": {
+      "use": "{actor} steps back.",
+      "hit": "Another comes forward."
+    },
+    "status": {
+      "use": "{actor} ~~marks~~ names them.",
+      "hit": "The {status}."
+    },
+    "cleanse": {
+      "use": "{actor} clears themselves.",
+      "hit": "What was on them lifts."
+    },
+    "brace": {
+      "use": "{actor} braces.",
+      "hit": ""
+    },
+    "noop": {
+      "use": "{actor} ~~hesitates~~ waits.",
+      "hit": ""
+    }
+  },
+  "events": {
+    "swap_out": "{actor} steps back.",
+    "swap_in": "{actor} comes forward to take the floor.",
+    "swap_yanked": "{actor} is ~~pulled~~ taken from the floor.",
+    "swap_none": "{actor} has no one to call.",
+    "swap_curse": "The break takes from {actor} on the way out.",
+    "swap_arrives_buffed": "{actor} arrives ~~bolstered~~ readied.",
+    "swap_arrives_healed": "{actor} arrives ~~bleeding~~ tended.",
+    "ability_fizzle": "{actor}'s {name} ~~fails~~ does not.",
+    "dazed_skip": "{actor} cannot ~~remember~~ act.",
+    "evade": "{target} ~~vanishes~~ is not where it was.",
+    "faint": "{actor} ~~dies~~ falls still.",
+    "step_in": "{actor} steps forward.",
+    "battle_open": "They are at the door. {enemies}.",
+    "phase_prepare": "{actor} ~~begins~~ prepares {name}.",
+    "phase_continue": "{actor} continues {name}.",
+    "phase_unleash": "{actor} ~~releases~~ unleashes {name}.",
+    "super": "It ~~lands deep~~ catches.",
+    "resist": "It ~~glances~~ slides off.",
+    "crit_tag": "The wound ~~opens~~ takes."
+  }
+}

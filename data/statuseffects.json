@@ -1,0 +1,42 @@
+{
+  "burn": {
+    "name": "Fevering",
+    "desc": "Deals damage each turn.",
+    "tickKind": "damage",
+    "turns": 4,
+    "percentPerTurn": 0.05,
+    "stacking": "refresh"
+  },
+  "bloom": {
+    "name": "Mending",
+    "desc": "Restores hp each turn.",
+    "tickKind": "heal",
+    "turns": 4,
+    "percentPerTurn": 0.05,
+    "stacking": "refresh"
+  },
+  "soaking": {
+    "name": "Drained",
+    "desc": "Lowers attack by 50%.",
+    "tickKind": "none",
+    "turns": 4,
+    "atkMult": 0.5,
+    "stacking": "refresh"
+  },
+  "cursed": {
+    "name": "Broken",
+    "desc": "Deals damage when swapping out.",
+    "tickKind": "none",
+    "turns": 99,
+    "percentOnSwap": 0.3,
+    "stacking": "refresh"
+  },
+  "dazed": {
+    "name": "Sedated",
+    "desc": "50% chance to skip turn.",
+    "tickKind": "none",
+    "turns": 2,
+    "skipChance": 0.5,
+    "stacking": "refresh"
+  }
+}

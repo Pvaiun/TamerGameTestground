@@ -1,0 +1,11 @@
+{
+  "growthThresholds": [
+    { "grade": "S", "min": 2.6 },
+    { "grade": "A", "min": 2.2 },
+    { "grade": "B", "min": 1.8 },
+    { "grade": "C", "min": 1.4 },
+    { "grade": "D", "min": 1.0 },
+    { "grade": "E", "min": 0.6 },
+    { "grade": "F", "min": 0 }
+  ]
+}
