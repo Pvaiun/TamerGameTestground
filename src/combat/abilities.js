@@ -9,8 +9,6 @@ import { VOICE } from '../data.js';
 
 const lower = (s) => String(s || '');
 
-// Look up a per-effect-kind voice template (from voiceprose.effectDefaults)
-// with templating against the supplied vars. Falls back to a generic line.
 function effectLine(kind, fallback, vars) {
   const v = VOICE.effectDefaults[kind];
   const tmpl = (v && (v.hit || v.use)) || fallback || '';
@@ -18,25 +16,21 @@ function effectLine(kind, fallback, vars) {
   return tmpl.replace(/\{(\w+)\}/g, (_, k) => (vars && vars[k] != null ? String(vars[k]) : ''));
 }
 
-// Read a param from an effect instance, falling back to the schema default.
 export function effParam(eff, paramKey) {
   if (eff[paramKey] !== undefined) return eff[paramKey];
   const schema = ADDITIONAL_EFFECTS[eff.type];
   return schema && schema.params && schema.params[paramKey] ? schema.params[paramKey].default : undefined;
 }
 
-// All effects across all phases (used by display helpers / classification).
 export function allEffects(ability) {
   return (ability.phases || []).flat();
 }
 
-// All effects in a specific phase.
 function phaseEffects(ability, phaseIdx) {
   const phases = ability.phases || [];
   return phases[phaseIdx] || [];
 }
 
-// Schema-declared default timing for an effect type. Damage modifiers don't have a timing.
 function effectTiming(eff) {
   if (eff.timing) return eff.timing;
   const schema = ADDITIONAL_EFFECTS[eff.type];
@@ -48,12 +42,14 @@ function isModifier(eff) {
 }
 
 // Apply the cursed-on-swap penalty if the swapping-out fighter has cursed status.
-// Pivot Master halves this damage. Animation is deferred to the log entry so
-// it lines up with the line appearing.
+// Pivot Master halves this damage. Rust-on-pin relic stacks the reduction.
 export function applyCursedOnSwap(f, side) {
   if (!f || !f.statuses || !f.statuses.cursed) return 0;
   let dmg = Math.max(1, Math.round(f.creature.maxHp * f.statuses.cursed.percentOnSwap));
   if (hasPassive(f, 'pivot_master')) dmg = Math.max(1, Math.round(dmg * 0.5));
+  if (state.relics && state.relics.length) {
+    for (const r of state.relics) if (r.reduceCursedSwap) dmg = Math.max(1, Math.round(dmg * (1 - r.reduceCursedSwap)));
+  }
   f.hp = Math.max(0, f.hp - dmg);
   pushLog(eventText('swap_curse', { actor: lower(displayName(f.creature)) }), {
     cls: 'eff',
@@ -63,14 +59,12 @@ export function applyCursedOnSwap(f, side) {
   return dmg;
 }
 
-// Post-hit passive resolution (called per landed hit).
 export function processPostHit(side, oside, attacker, defender, ability, result) {
   applyPostHitPassives(side, oside, attacker, defender, result, {
     applyHeal, applyStatus, spawnFloat, pushLog, displayName,
   });
 }
 
-// Resolve a target key from the attacker's perspective into a list of fighters.
 export function resolveTargets(targetKey, side, attacker, defender) {
   const ownBench   = side === 'player' ? state.bf  : state.ebf;
   const enemyBench = side === 'player' ? state.ebf : state.bf;
@@ -81,15 +75,9 @@ export function resolveTargets(targetKey, side, attacker, defender) {
   return [];
 }
 
-// Status apply opts. Currently no per-passive overrides; kept as an extension point.
 function statusOptsFor(_attacker, _statusName) {
   return {};
 }
-
-// ─── Per-effect handlers (timed) ────────────────────────────────────────────
-// Each handler receives a context: { side, oside, attacker, defender, lastDmg, helpers }.
-// `lastDmg` is the most-recent hit's damage (0 if not in eachHit context).
-// `helpers` carries cross-module callbacks (performSelfSwap) to avoid circular imports.
 
 async function handleEffect(eff, ctx) {
   const { side, oside, attacker, defender, lastDmg, helpers } = ctx;
@@ -103,8 +91,14 @@ async function handleEffect(eff, ctx) {
       if (turnsOv && turnsOv > 0) opts.turns = turnsOv;
       if (pctOv && pctOv > 0)     opts.pct   = pctOv;
       const fighters = targets.flatMap(tk => resolveTargets(tk, side, attacker, defender));
-      for (const f of fighters) applyStatus(f, status, opts);
-      if (fighters.length) pushLog(affApply(status), { cls: 'eff' });
+      const applied = [];
+      for (const f of fighters) if (applyStatus(f, status, opts)) applied.push(f);
+      if (applied.length) {
+        // Use the actual target's name for prose templating.
+        const target = applied[0];
+        const prose = affApply(status).replace('{target}', lower(displayName(target.creature)));
+        pushLog(prose, { cls: 'eff' });
+      }
       return;
     }
     case 'buff': {
@@ -197,8 +191,6 @@ async function handleEffect(eff, ctx) {
       }
       return;
     }
-    // Damage modifiers and 'damage' have no timed handler — damage runs in the phase
-    // runner; modifiers are read by calculateDamage.
   }
 }
 
@@ -228,7 +220,6 @@ async function doEnemySwap(side, oside, defender) {
   }
 }
 
-// Run all timed effects in a phase that match a given timing band.
 export async function runTimedEffects(timing, phase, ctx) {
   for (const eff of phase) {
     if (isModifier(eff) || eff.type === 'damage') continue;
@@ -237,7 +228,6 @@ export async function runTimedEffects(timing, phase, ctx) {
   }
 }
 
-// Run effects with timing=eachHit in a phase, called once per landed damage hit.
 export async function runEachHitEffects(phase, ctx) {
   for (const eff of phase) {
     if (isModifier(eff) || eff.type === 'damage') continue;
@@ -246,7 +236,6 @@ export async function runEachHitEffects(phase, ctx) {
   }
 }
 
-// Modifier accessors used by damage.js / passives.js.
 export function findModifier(phase, type) {
   return phase.find(e => e.type === type) || null;
 }

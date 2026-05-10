@@ -14,6 +14,7 @@ export let ALL_ENCOUNTER_SPECIES = [];
 export const GLOBALS = { growthThresholds: [] };
 export const PASSIVE_SCHEMA = { triggers: {}, conditions: {}, effects: {} };
 export const GLYPHS = {};
+export let RELICS = {};
 export const VOICE = {
   subtitles: {},
   notes: {},
@@ -33,7 +34,7 @@ async function fetchJson(path) {
 }
 
 export async function loadData() {
-  const [types, passives, abilities, statuses, addEffects, templates, globals, passiveSchema, glyphs, voice] = await Promise.all([
+  const [types, passives, abilities, statuses, addEffects, templates, globals, passiveSchema, glyphs, voice, relics] = await Promise.all([
     fetchJson('data/types.json'),
     fetchJson('data/passives.json'),
     fetchJson('data/abilities.json'),
@@ -44,6 +45,7 @@ export async function loadData() {
     fetchJson('data/passivetriggers.json'),
     fetchJson('data/glyphs.json'),
     fetchJson('data/voiceprose.json'),
+    fetchJson('data/relics.json'),
   ]);
   TYPES = types.TYPES;
   Object.assign(TYPE_CHART, types.TYPE_CHART);
@@ -51,8 +53,6 @@ export async function loadData() {
   Object.assign(TYPE_LABELS, types.TYPE_LABELS || {});
   Object.assign(PASSIVES, passives);
   Object.assign(ABILITIES, abilities);
-  // Stamp each ability with its own key so combat code can look up voice
-  // prose by ability id without re-deriving the key from a reverse lookup.
   for (const [k, a] of Object.entries(ABILITIES)) a._key = k;
   Object.assign(STATUSES, statuses);
   Object.assign(ADDITIONAL_EFFECTS, addEffects);
@@ -67,6 +67,10 @@ export async function loadData() {
   for (const [k, v] of Object.entries(glyphs)) {
     if (k.startsWith('_')) continue;
     GLYPHS[k] = v;
+  }
+  for (const [k, v] of Object.entries(relics)) {
+    if (k.startsWith('_')) continue;
+    RELICS[k] = { id: k, ...v };
   }
   Object.assign(VOICE.subtitles,      voice.subtitles      || {});
   Object.assign(VOICE.notes,          voice.notes          || {});

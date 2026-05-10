@@ -129,9 +129,17 @@
     padding-bottom: var(--space-2);
     margin-bottom: var(--space-3);
     border-bottom: 1px solid var(--rule-faint);
+    gap: var(--space-3);
   }
   .engagement-strip .eng-sep { color: var(--ink-40); }
-  .engagement-strip .eng-right { color: var(--ink-100); }
+  .engagement-strip .eng-right { color: var(--ink-100); display: flex; align-items: baseline; gap: var(--space-2); }
+  .eng-btn {
+    background: transparent; border: 1px solid var(--rule-faint); color: var(--ink-80);
+    font-family: var(--font-mono); font-size: var(--fs-label-2);
+    letter-spacing: var(--ls-label); padding: 2px 6px; cursor: pointer;
+    transition: color var(--dur-quick) var(--ease-out), border-color var(--dur-quick) var(--ease-out);
+  }
+  .eng-btn:hover { color: var(--ink-100); border-color: var(--rule-soft); }
 
   /* dossier grid ──────────────────────────────────────────────────── */
   .dossier-grid {
@@ -189,6 +197,8 @@
   .bench-hp-inline { color: var(--ink-80); flex-shrink: 0; font-size: var(--fs-body-tight); }
   .bench-hp-inline .bench-hp-num { color: var(--ink-100); }
   .bench-composure { color: var(--ink-60); flex: 1; font-style: italic; font-size: var(--fs-body-tight); }
+  .bench-status-inline { color: var(--doc-blood); font-size: var(--fs-label-2); flex-shrink: 0; }
+  .bench-status-inline.redact-dots { letter-spacing: 1px; }
   .bench-inline.enemy .bench-composure { text-align: right; }
 
   /* title + subtitle ──────────────────────────────────────────────── */
@@ -462,18 +472,33 @@
   .action-row.queued { color: var(--ink-100); }
   .action-row.queued .action-marker { color: var(--ink-100); }
 
-  /* element matchup mark beside ability names in the title list */
+  /* trailing column on action rows: damage estimate, kind tag, element, matchup */
+  .action-row .action-tail {
+    display: inline-flex; align-items: baseline; gap: 6px;
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: var(--fs-label-2);
+    color: var(--ink-60);
+    letter-spacing: var(--ls-tight);
+  }
+  .action-row .action-dmg-est { color: var(--ink-100); font-size: var(--fs-body); letter-spacing: 0; }
+  .action-row .action-kind    { color: var(--ink-80); font-style: italic; }
+  .action-row .action-elem    { color: var(--ink-60); }
+  .action-row:hover:not(:disabled) .action-dmg-est { color: var(--ink-100); }
+  .action-row.is-default:not(:hover) .action-dmg-est { color: var(--ink-60); }
+  .action-list:hover .action-row.is-default:not(:hover) .action-dmg-est { color: var(--ink-60); }
+
+  /* element matchup pill */
   .action-row-matchup {
     flex-shrink: 0;
-    font-size: var(--fs-header-2);
-    letter-spacing: 0;
-    margin-left: auto;
-    padding-left: var(--space-2);
-    width: 1.5ch;
-    text-align: right;
+    font-size: var(--fs-label);
+    letter-spacing: var(--ls-label);
+    padding: 0 4px;
+    border: 1px solid currentColor;
+    border-radius: 1px;
   }
-  .action-row-matchup.good { color: var(--ink-100); font-weight: 700; }
-  .action-row-matchup.bad  { color: var(--ink-40); }
+  .action-row-matchup.good { color: var(--ink-100); }
+  .action-row-matchup.bad  { color: var(--doc-blood); }
 
   /* split-pane detail — effect (verbose mechanical) + flavor (atmospheric)
      + optional phase note. Both run through parseProse so authored
@@ -1012,6 +1037,29 @@
      fallbacks don't bleed visual cruft into the new layout */
   .doc-page button { font-family: var(--font-mono); }
   .doc-page button:hover:not(:disabled) { transform: none; }
+
+  /* path / records / relic cards ─────────────────────────────────── */
+  .path-card .path-glyph,
+  .relic-card .relic-glyph {
+    width: 56px; height: 56px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .path-card .path-icon,
+  .relic-card .relic-icon {
+    color: var(--ink-100);
+    font-size: 28px;
+    line-height: 1;
+  }
+  .path-card:hover .path-icon,
+  .relic-card:hover .relic-icon { color: var(--doc-gold); }
+  .relic-desc {
+    color: var(--ink-100);
+    font-size: var(--fs-body);
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+
+  /* run-relic strip — shown on between-wave header (kept simple, fits with the existing cells) */
 
   /* responsive — narrow viewports ─────────────────────────────────── */
   @media (max-width: 640px) {

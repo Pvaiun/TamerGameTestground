@@ -1,12 +1,8 @@
 // Generic passive engine. Passives in data/passives.json are
 // `{ name, desc, triggers: [{ on, if?, effect, consumesOn? }] }`.
-// Trigger names + condition predicates + effect schemas live in
-// data/passivetriggers.json (loaded as PASSIVE_SCHEMA).
-//
-// Each call site exports a thin wrapper that fires one trigger and reduces
-// the matched effects into the return value the call site needs.
 
 import { PASSIVES, ADDITIONAL_EFFECTS } from '../data.js';
+import { state } from '../state.js';
 
 export function hasPassive(f, key) {
   return f && f.creature && f.creature.passives && f.creature.passives.includes(key);
@@ -91,7 +87,7 @@ function consumeIfNeeded(f, item) {
   if (item.entry.consumesOn === 'battle') markConsumed(f, item.passiveKey, item.idx);
 }
 
-// ─── Custom effect implementations (the few mechanics that don't fit pure data) ──
+// ─── Custom effect implementations ───────────────────────────────────────────
 
 const CUSTOM = {
   // Slow Burn: stack each turn; ATK bonus per stack.
@@ -101,9 +97,9 @@ const CUSTOM = {
   },
   slowBurnAtkBonus(_eff, ctx) {
     if (ctx.queryStat !== 'atk') return;
-    ctx.outMult *= 1 + 0.1 * Math.min(5, ctx.self.slowBurnStacks || 0);
+    ctx.outMult *= 1 + 0.08 * Math.min(5, ctx.self.slowBurnStacks || 0);
   },
-  // Patient Hunter: +0.5 power per turn skipped, max 3 stacks; consume on attack.
+  // Patient Hunter: +0.4 power per turn skipped, max 3 stacks; consume on attack.
   patientHunterTick(_eff, ctx) {
     const f = ctx.self;
     if (!f.attackedThisTurn) f.patientStacks = Math.min(3, (f.patientStacks || 0) + 1);
@@ -113,25 +109,18 @@ const CUSTOM = {
     const f = ctx.self;
     f.attackedThisTurn = true;
     if (f.patientStacks && f.patientStacks > 0) {
-      ctx.outPower *= 1 + 0.5 * Math.min(3, f.patientStacks);
+      ctx.outPower *= 1 + 0.4 * Math.min(3, f.patientStacks);
       f.patientStacks = 0;
     }
   },
-  // Zealot: would need a hook into "buff effect resolved on attacker." Not yet
-  // wired; declared so the trigger entry doesn't error.
   zealotConsume(_eff, ctx) {
     if (ctx.self.zealotPrimed) {
-      ctx.outPower *= 1.5;
+      ctx.outPower *= 1.4;
       ctx.self.zealotPrimed = false;
     }
   },
-  // Pivot Master: cursed-on-swap damage halved. abilities.applyCursedOnSwap
-  // checks the passive directly; this stub keeps the trigger listed cleanly.
   pivotMasterReduceCursedSwap() {},
-  // Spotter: bench tick mult. status.tickFighterStatuses checks the passive
-  // directly; stub trigger keeps the data side intact.
   spotterTickMult() {},
-  // Twin Soul / Scavenger: TODO (require new hooks); stubs.
   twinSoul() {},
   scavengerCopyBuff() {},
 };
@@ -142,14 +131,10 @@ function runCustom(impl, ctx) {
 }
 
 // ─── Effect dispatcher ───────────────────────────────────────────────────────
-// Many triggers reduce matched effects into a number (mult, raw, count, etc.).
-// Others run side-effecting actions (heal, damage, apply status). The dispatcher
-// returns void; per-trigger wrappers below collect what they need from `ctx`.
 
 function runEffect(eff, ctx) {
   const cbs = ctx.cbs || {};
   switch (eff.type) {
-    // ── Reducers (write to ctx.outMult / outPower / outRaw / outFlag) ──
     case 'stat_mult':
       if (eff.stat === ctx.queryStat) ctx.outMult *= (eff.value ?? 1);
       return;
@@ -205,7 +190,6 @@ function runEffect(eff, ctx) {
       ctx.outWin = true;
       return;
 
-    // ── Side-effecting actions ──
     case 'heal_self': {
       const f = ctx.self;
       const amt = Math.max(1, Math.round(f.creature.maxHp * (eff.percent || 0)));
@@ -311,7 +295,6 @@ function runEffect(eff, ctx) {
   }
 }
 
-// Drives matched entries through the dispatcher.
 function fire(f, triggerName, ctx) {
   ctx.self = ctx.self || f;
   for (const item of matching(f, triggerName, ctx)) {
@@ -323,20 +306,17 @@ function fire(f, triggerName, ctx) {
   return ctx;
 }
 
-// ─── Public API used by the rest of combat ──────────────────────────────────
+// ─── Public API ──────────────────────────────────────────────────────────────
 
-// Stat query — multiplies through a base mult.
+// Stat query — multiplies through a base mult. Soaking is handled in damage.js
+// effectiveStat directly so stat mods can be clamped before applying.
 export function applyStatMult(f, stat, m) {
   const ctx = { self: f, queryStat: stat, outMult: m };
   fire(f, 'stat_query', ctx);
-  if (stat === 'atk' && f.statuses && f.statuses.soaking) {
-    ctx.outMult *= f.statuses.soaking.atkMult ?? 0.5;
-  }
   return ctx.outMult;
 }
 
-// Power query — passive multipliers + phase-level damage modifiers (kept here
-// because they used to live in this function).
+// Power query — passive multipliers + phase-level damage modifiers.
 export function applyPowerMult(attacker, defender, ability, power, phase, { attackerSpd = 0, defenderSpd = 0 } = {}) {
   const ctx = {
     self: attacker, target: defender,
@@ -346,7 +326,6 @@ export function applyPowerMult(attacker, defender, ability, power, phase, { atta
   };
   fire(attacker, 'power_query', ctx);
 
-  // Phase-level damage modifiers (read from the ability, not from passives).
   const exec = (phase || []).find(e => e.type === 'execute_scale');
   if (exec) {
     const sa = exec.scaleAmount ?? ADDITIONAL_EFFECTS.execute_scale?.params?.scaleAmount?.default ?? 0.5;
@@ -361,35 +340,51 @@ export function applyPowerMult(attacker, defender, ability, power, phase, { atta
   return ctx.outPower;
 }
 
-// Defense — flat reduction or non-element multiplier.
 export function applyFlatDmgReduction(defender, raw, attackElement = null) {
   const ctx = { self: defender, attackElement, outRaw: raw };
   fire(defender, 'defense_query', ctx);
+  // Run-relics: flat damage reduction
+  if (state.relics && state.relics.length) {
+    let m = 1;
+    for (const r of state.relics) if (r.takeMult) m *= r.takeMult;
+    ctx.outRaw *= m;
+  }
   return ctx.outRaw;
 }
 
-// Crit query — passives may override mult, set chance, or add bonus mult.
 export function getCritProfile(attacker) {
-  const ctx = { self: attacker, outCritMult: 1.6, outCritChance: 0.1 };
+  let chance = 0.08;
+  let mult = 1.7;
+  if (state.relics && state.relics.length) {
+    for (const r of state.relics) {
+      if (r.critChanceBonus) chance += r.critChanceBonus;
+      if (r.critMultBonus)   mult   += r.critMultBonus;
+    }
+  }
+  const ctx = { self: attacker, outCritMult: mult, outCritChance: chance };
   fire(attacker, 'crit_query', ctx);
   return { mult: ctx.outCritMult, chance: ctx.outCritChance };
 }
 
-// Back-compat wrappers used by damage.js (single mult-only API).
 export function getCritMult(attacker) { return getCritProfile(attacker).mult; }
 export function getCritChance(attacker) { return getCritProfile(attacker).chance; }
 
-// Evasion query.
 export function checkEvasion(defender) {
-  const ctx = { self: defender, outEvadeChance: 0 };
+  let baseEvade = 0;
+  if (state.relics && state.relics.length) {
+    for (const r of state.relics) if (r.evadeBonus) baseEvade = Math.max(baseEvade, r.evadeBonus);
+  }
+  const ctx = { self: defender, outEvadeChance: baseEvade };
   fire(defender, 'evasion_query', ctx);
   return ctx.outEvadeChance > 0 && Math.random() < ctx.outEvadeChance;
 }
 
-// Heal query — modifies a base heal amount and cap.
 export function modifyHeal(f, baseAmount) {
   const ctx = { self: f, outHealMult: 1, outHealCapMult: 1, outBlockHeal: false };
   fire(f, 'heal_query', ctx);
+  if (state.relics && state.relics.length) {
+    for (const r of state.relics) if (r.healMult) ctx.outHealMult *= r.healMult;
+  }
   if (ctx.outBlockHeal) return { amount: 0, cap: f.creature.maxHp };
   return {
     amount: Math.round(baseAmount * ctx.outHealMult),
@@ -397,46 +392,42 @@ export function modifyHeal(f, baseAmount) {
   };
 }
 
-// Status block — runs status_block trigger and returns true if any matched.
 export function blocksStatus(f, statusType) {
   const ctx = { self: f, statusType, outBlocked: false };
   fire(f, 'status_block', ctx);
   return ctx.outBlocked;
 }
 
-// Type-chart bypass (used by damage.js to short-circuit element mults).
 export function bypassesTypeChart(attacker) {
   const ctx = { self: attacker, outBypass: false };
   fire(attacker, 'type_chart_query', ctx);
   return ctx.outBypass;
 }
 
-// Self-damage modifier (used by hp_cost effect).
 export function applySelfDmgMult(f, raw) {
   const ctx = { self: f, outMult: 1 };
   fire(f, 'self_damage_query', ctx);
+  if (state.relics && state.relics.length) {
+    for (const r of state.relics) if (r.selfDmgMult) ctx.outMult *= r.selfDmgMult;
+  }
   return raw * ctx.outMult;
 }
 
-// Tie break — returns true if this fighter wins ties.
 export function winsTies(f) {
   const ctx = { self: f, outWin: false };
   fire(f, 'tie_break', ctx);
   return ctx.outWin;
 }
 
-// Battle start — fires for each living fighter against its current opponent.
 export function applyBattleStartPassive(f, opponent, cbs) {
   fire(f, 'battle_start', { self: f, target: opponent, cbs, side: null, oside: null });
 }
 
-// Swap in/out. `incoming` is the new active; `outgoing` is the bench-bound creature.
 export function applySwapInPassives(incoming, outgoing, side, cbs) {
   fire(incoming, 'swap_in', { self: incoming, target: null, cbs, side });
   fire(outgoing, 'swap_out', { self: outgoing, incoming, cbs, side });
 }
 
-// Post-hit: run hit_dealt on attacker and hit_taken on defender.
 export function applyPostHitPassives(side, oside, attacker, defender, result, cbs) {
   fire(attacker, 'hit_dealt', {
     self: attacker, target: defender, dmg: result.dmg, isCrit: !!result.crit,
@@ -451,22 +442,15 @@ export function applyPostHitPassives(side, oside, attacker, defender, result, cb
   }
 }
 
-// Turn start — fires for the active fighter; also ticks timed buffs.
 export function applyTurnStartPassives(f, side, cbs) {
   fire(f, 'turn_start', { self: f, side, cbs });
   tickTimedBuffs(f);
 }
 
-// Bench tick — heals and similar; returns the spotter mult for the burn-tick caller.
 export function applyBenchPassives(f, isBench, cbs) {
   if (isBench) fire(f, 'bench_tick', { self: f, side: null, cbs });
-  // Spotter still queried directly: it modifies tick damage on the bench ally,
-  // which is structurally a bench_tick with a custom-impl effect that we
-  // surface as a multiplier here for the existing call site.
   return (isBench && hasPassive(f, 'spotter')) ? 0.7 : 1.0;
 }
-
-// ─── Timed buffs (countdown on turn_start) ──────────────────────────────────
 
 function tickTimedBuffs(f) {
   if (!f.timedBuffs || !f.timedBuffs.length) return;

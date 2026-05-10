@@ -4,6 +4,8 @@
 export const TOTAL_WAVES = 10;
 export const BREED_WAVES = new Set([3, 6, 9]);
 export const MAX_LEVEL = 50;
+export const PARTY_CAP = 2;
+export const MAX_RELICS = 8;
 
 export const state = {
   screen: 'start',
@@ -24,10 +26,29 @@ export const state = {
   acting: false,
   pCharge: null,
   eCharge: null,
-  // Index of the log entry currently typewriting in the narrative box. Set
-  // by the log drainer; -1 when nothing is animating. Drives the typewriter
-  // styling on the latest narrative line.
   typingLogIdx: -1,
+
+  // Combat speed: 1 = normal, 2 = fast (default fast since the original was painfully slow).
+  combatSpeed: 2,
+
+  // Map / path state. pathChoices is set when entering the path screen.
+  pathChoices: null,
+  pendingRoomKind: 'battle',
+  recordsCandidates: null,
+  tendState: null,
+
+  // Run-long relics (acquired in records rooms / from elites).
+  relics: [],
+
+  // Last battle's elite flag (drives reward weighting).
+  isEliteBattle: false,
+
+  // Prebattle UI: selection state for re-composing party.
+  prebattleSelection: null,
+  prebattleLead: false,
+
+  // One-time revive flag from letter_outside relic.
+  usedRevive: false,
 };
 
 // pushLog accepts a string (legacy plain-text entry) or a structured object
@@ -66,10 +87,17 @@ export function resetGame() {
   state.starterPool = null;
   state.acting = false;
   state.typingLogIdx = -1;
+  state.pathChoices = null;
+  state.pendingRoomKind = 'battle';
+  state.relics = [];
+  state.isEliteBattle = false;
+  state.prebattleSelection = null;
+  state.prebattleLead = false;
+  state.recordsCandidates = null;
+  state.tendState = null;
+  state.usedRevive = false;
   state.screen = 'start';
 }
 
-// Allocates monotonically increasing creature IDs. Used by makeCreature() and
-// makeChild() — they share one counter so IDs are unique across both.
 let creatureIdCounter = 1;
 export function nextCreatureId() { return creatureIdCounter++; }

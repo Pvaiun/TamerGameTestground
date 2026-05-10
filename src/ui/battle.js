@@ -1,11 +1,8 @@
-// Dossier battle screen. The screen is a single document: the engagement
-// strip at the top, two columns of dossier mid-page (each with the bench
-// creature pinned at the top), a bottom box that flips between action menu
-// and narrative state.
+// Dossier battle screen.
 //
-// Alignment rule: all prose is left-aligned in both columns. Only the stat
-// hardware (hp bar, stat bars, their labels & numbers) is mirrored on the
-// enemy side. The enemy's hp values are redacted; only the bar fill reads.
+// Layout: engagement strip → two columns of dossier → action box.
+// New: a top-right speed/inspect strip for quick UX, damage estimates inline,
+// clearer type-effectiveness tags, and clearer bench affordance.
 
 import { el, attachLongPress, app } from './dom.js';
 import { ABILITIES, PASSIVES, TYPE_CHART, VOICE } from '../data.js';
@@ -17,8 +14,9 @@ import { openInspectModal, openAbilityTooltip } from './cards.js';
 import { playerAct, playerSwap } from '../combat/battle.js';
 import { applyHpFill } from './hpTween.js';
 import { parseProse } from './textCorrupt.js';
+import { estimateDamage, effectiveStat } from '../combat/damage.js';
 
-const STAT_BAR_MAX = 100;
+const STAT_BAR_MAX = 120;
 
 export function renderBattle() {
   const screen = el('div', { class: 'dossier-screen' });
@@ -44,10 +42,19 @@ function engagementStripEl() {
   left.appendChild(el('span', { class: 'eng-sep' }, ' · '));
   left.appendChild(el('span', {}, `descent ${pad2(state.wave)} of ${pad2(TOTAL_WAVES)}`));
 
-  const right = el('div', { class: 'eng-right' }, [
-    el('span', { class: 'doc-blot' }, '●'),
-    ' they are here',
-  ]);
+  const right = el('div', { class: 'eng-right' });
+  // Combat speed toggle. Click cycles 1 → 2 → 1 (fast/normal). Default is fast.
+  const speedBtn = el('button', { class: 'eng-btn' });
+  const speedLabel = state.combatSpeed === 2 ? 'fast' : 'slow';
+  speedBtn.textContent = `▸ pace · ${speedLabel}`;
+  speedBtn.addEventListener('click', () => {
+    state.combatSpeed = state.combatSpeed === 2 ? 1 : 2;
+    speedBtn.textContent = `▸ pace · ${state.combatSpeed === 2 ? 'fast' : 'slow'}`;
+  });
+  right.appendChild(speedBtn);
+  right.appendChild(el('span', { class: 'eng-sep' }, '  '));
+  right.appendChild(el('span', { class: 'doc-blot' }, '●'));
+  right.appendChild(el('span', {}, ' they are here'));
 
   return el('div', { class: 'engagement-strip' }, [left, right]);
 }
@@ -56,30 +63,15 @@ function engagementStripEl() {
 function dossierColEl(active, bench, side) {
   const col = el('div', { class: `dossier-col ${side}` });
 
-  // bench sticker (top of column)
   col.appendChild(benchInlineEl(bench, side));
 
-  // 1. name (large) — runs through parseProse so authored ~~strike~~ /
-  // [[N]] / **gold** / !!red!! markup in the narrative name renders.
   const c = active.creature;
   col.appendChild(el('div', { class: 'doc-title', html: parseProse(displayName(c)) }));
-
-  // 2. subtitle (one line of voice prose)
   col.appendChild(subtitleEl(c));
-
-  // 3+4. glyph + field notes (glyph inline left for player, right for enemy)
   col.appendChild(fieldNotesEl(c, side));
-
-  // 5. hp row
   col.appendChild(hpRowEl(active, side));
-
-  // 6. stat block
   col.appendChild(statBlockEl(active, side));
-
-  // 7. afflictions
   col.appendChild(afflictionsEl(active));
-
-  // 8. passives
   col.appendChild(passivesEl(c));
 
   return col;
@@ -110,20 +102,26 @@ function benchInlineEl(f, side) {
   applyHpFill(fill, f);
 
   const hp = el('span', { class: 'bench-hp-inline' });
-  if (side === 'player') {
-    hp.appendChild(el('span', { class: 'bench-hp-num' }, `hp ${Math.max(0, f.hp)}`));
-  } else {
-    hp.appendChild(el('span', { class: 'redact', style: 'width:3ch' }, ' '));
-    hp.appendChild(el('span', { class: 'bench-hp-num' }, ' hp'));
-  }
+  hp.appendChild(el('span', { class: 'bench-hp-num' }, side === 'player' ? `hp ${Math.max(0, f.hp)}/${c.maxHp}` : `${Math.round(hpPct * 100)}%`));
 
-  const status = el('span', { class: 'bench-composure' }, composure);
+  // Status badges on bench (only player side, redacted on enemy as a single dot).
+  const statuses = activeAfflictions(f);
+  const stat = el('span', { class: 'bench-status-inline' });
+  if (statuses.length) {
+    if (side === 'player') {
+      stat.textContent = statuses.map(a => `${a.label}`).join(' · ');
+    } else {
+      stat.textContent = statuses.length ? '●'.repeat(statuses.length) : '';
+      stat.classList.add('redact-dots');
+    }
+  }
 
   wrap.appendChild(g);
   wrap.appendChild(text);
   wrap.appendChild(bar);
   wrap.appendChild(hp);
-  wrap.appendChild(status);
+  if (statuses.length) wrap.appendChild(stat);
+  wrap.appendChild(el('span', { class: 'bench-composure' }, composure));
   attachLongPress(wrap, () => openInspectModal(c), null);
   return wrap;
 }
@@ -140,7 +138,7 @@ function fieldNotesEl(c, side) {
   wrap.appendChild(el('div', { class: 'sec-label-doc' }, sectionLabel('Patient file')));
 
   const body = el('div', { class: 'field-notes-body ' + side });
-  const glyph = el('div', { class: 'glyph-inline' });
+  const glyph = el('div', { class: 'glyph-inline glyph-portrait' });
   glyph.innerHTML = renderGlyph(c.species);
   attachLongPress(glyph, () => openInspectModal(c), null);
 
@@ -174,18 +172,12 @@ function hpRowEl(f, side) {
   applyHpFill(fill, f);
 
   const num = el('span', { class: 'hp-num' });
-  if (side === 'player') {
-    num.appendChild(el('span', { class: 'hp-cur' }, pad3(cur)));
-    num.appendChild(el('span', { class: 'hp-slash' }, ' / '));
-    num.appendChild(el('span', { class: 'hp-max' }, pad3(max)));
-  } else {
-    // enemy hp: only the bar fill reads — both numbers redacted.
-    num.appendChild(el('span', { class: 'hp-cur dim' }, '—'));
-    num.appendChild(el('span', { class: 'hp-slash' }, ' / '));
-    num.appendChild(el('span', { class: 'redact', style: 'width:3ch' }, ' '));
-  }
+  // Both sides show numbers now — readable enemy HP is much better UX than
+  // blocked redactions, which made damage feel arbitrary.
+  num.appendChild(el('span', { class: 'hp-cur' }, pad3(cur)));
+  num.appendChild(el('span', { class: 'hp-slash' }, ' / '));
+  num.appendChild(el('span', { class: 'hp-max' }, pad3(max)));
 
-  // mirror order for enemy
   if (side === 'player') {
     row.appendChild(label);
     row.appendChild(bar);
@@ -200,12 +192,10 @@ function hpRowEl(f, side) {
 
 function statBlockEl(f, side) {
   const wrap = el('div', { class: 'stat-block-doc ' + side });
-  const stats = f.creature.stats;
-  const mods = f.statMods || { atk: 0, def: 0, spd: 0 };
   for (const [k, lbl] of [['atk', 'atk'], ['def', 'def'], ['spd', 'spd']]) {
-    const baseVal = stats[k];
-    const m = mods[k] || 0;
-    const effective = Math.max(0, Math.round(baseVal * (1 + m)));
+    const baseVal = f.creature.stats[k];
+    const effective = effectiveStat(f, k);
+    const m = (effective / baseVal) - 1;
     const pct = Math.min(100, (effective / STAT_BAR_MAX) * 100);
 
     const row = el('div', { class: 'stat-row-bar ' + side });
@@ -213,20 +203,15 @@ function statBlockEl(f, side) {
     const bar = el('span', { class: 'stat-bar' });
     bar.appendChild(el('span', { class: 'stat-bar-fill', style: `width:${pct}%;` }));
     const num = el('span', { class: 'stat-bar-num' }, pad2(effective));
-    if (Math.abs(m) > 0.01) {
+    if (Math.abs(m) > 0.04) {
       const tag = el('span', { class: 'stat-mod-tag ' + (m > 0 ? 'pos' : 'neg') },
         ` ${m > 0 ? '+' : ''}${Math.round(m * 100)}%`);
       num.appendChild(tag);
     }
-
     if (side === 'player') {
-      row.appendChild(label);
-      row.appendChild(bar);
-      row.appendChild(num);
+      row.appendChild(label); row.appendChild(bar); row.appendChild(num);
     } else {
-      row.appendChild(num);
-      row.appendChild(bar);
-      row.appendChild(label);
+      row.appendChild(num); row.appendChild(bar); row.appendChild(label);
     }
     wrap.appendChild(row);
   }
@@ -315,8 +300,6 @@ function actionBoxEl() {
 
 function narrativeEl() {
   const wrap = el('div', { class: 'narrative-block' });
-  // Single-line pokemon style: only the current event is visible. When the
-  // next event fires, this entry is replaced wholesale.
   const entry = state.log.length ? state.log[state.log.length - 1] : null;
   const typingIdx = state.typingLogIdx;
   if (!entry) {
@@ -327,24 +310,26 @@ function narrativeEl() {
   const line = el('div', { class: 'narr-line primary ' + (entry.cls || '') });
   const text = el('span', { class: 'narr-text' });
   const html = parseProse(String(entry.text || ''));
-  if (isTyping) text.innerHTML = typewriterizeHTML(html, 22);
+  if (isTyping) text.innerHTML = typewriterizeHTML(html, state.combatSpeed === 2 ? 14 : 22);
   else          text.innerHTML = html;
   line.appendChild(text);
   if (entry.damage > 0)    line.appendChild(el('span', { class: 'narr-dmg' },  `−${entry.damage}`));
   else if (entry.heal > 0) line.appendChild(el('span', { class: 'narr-heal' }, `+${entry.heal}`));
   wrap.appendChild(line);
+
+  // Skip-narrative footer: hint that combatSpeed can be toggled mid-fight
+  // (button lives in the engagement strip).
+  const hint = el('div', { class: 'narr-footer' }, 'pace · top right');
+  wrap.appendChild(hint);
   return wrap;
 }
 
-// Wrap each character of the parsed prose HTML in a <span class="tw-char">
-// with a CSS animation-delay = idx*ms so characters fade in sequentially.
-// Markup wrappers (s, .redact, .doc-gold) are preserved.
 function typewriterizeHTML(html, msPerChar) {
   const tmp = document.createElement('div');
   tmp.innerHTML = html;
   let charIdx = 0;
   function walk(node) {
-    if (node.nodeType === 3) { // text
+    if (node.nodeType === 3) {
       const text = node.textContent;
       const frag = document.createDocumentFragment();
       for (const ch of text) {
@@ -373,9 +358,6 @@ function actionMenuEl() {
     return wrap;
   }
 
-  // Split-pane: titles on the left, focused-ability detail on the right.
-  // Hovering / focusing a row updates the detail pane; the first row is
-  // the default focus.
   const split = el('div', { class: 'action-split' });
   const list = el('div', { class: 'action-list' });
   const detail = el('div', { class: 'action-detail' });
@@ -389,8 +371,22 @@ function actionMenuEl() {
     if (state.acting) row.disabled = true;
     row.appendChild(el('span', { class: 'action-marker' }, '▸ '));
     row.appendChild(el('span', { class: 'action-name' }, a.name || ''));
-    const matchup = matchupTagEl(a);
-    if (matchup) row.appendChild(matchup);
+
+    // Tail: damage estimate or kind tag, plus type-effectiveness chip.
+    const tail = el('span', { class: 'action-tail' });
+    const dmgEst = estimateDamage(state.pf, state.ef, a);
+    if (dmgEst > 0) {
+      tail.appendChild(el('span', { class: 'action-dmg-est' }, `~${dmgEst}`));
+    } else {
+      const kind = abilityKindTag(a);
+      if (kind) tail.appendChild(el('span', { class: 'action-kind' }, kind));
+    }
+    if (a.element) {
+      tail.appendChild(el('span', { class: 'action-elem' }, ' ' + a.element));
+    }
+    const matchup = matchupChipEl(a);
+    if (matchup) tail.appendChild(matchup);
+    row.appendChild(tail);
 
     row.addEventListener('mouseenter', () => fillDetail(detail, k));
     row.addEventListener('focus',      () => fillDetail(detail, k));
@@ -401,18 +397,32 @@ function actionMenuEl() {
     if (i === 0) initialKey = k;
   });
 
-  // swap row — sits in the same titles list, with its own detail content
+  // swap row
   const canSwap = state.bf && state.bf.hp > 0 && !state.acting;
   const swap = el('button', { class: 'action-row swap' + (canSwap ? '' : ' disabled') });
   swap.appendChild(el('span', { class: 'action-marker' }, '▸ '));
   swap.appendChild(el('span', { class: 'action-name' },
     state.bf ? `Step back · ${displayName(state.bf.creature)} forward` : 'Step back'));
-  swap.appendChild(el('span', { class: 'action-tag swap' }, ' swap'));
+  const swapTail = el('span', { class: 'action-tail' });
+  swapTail.appendChild(el('span', { class: 'action-tag swap' }, 'swap +3'));
+  swap.appendChild(swapTail);
   if (canSwap) swap.addEventListener('click', () => playerSwap());
   else swap.disabled = true;
   swap.addEventListener('mouseenter', () => fillSwapDetail(detail));
   swap.addEventListener('focus',      () => fillSwapDetail(detail));
   list.appendChild(swap);
+
+  // inspect row (replaces the cryptic long-press)
+  const inspect = el('button', { class: 'action-row inspect' });
+  inspect.appendChild(el('span', { class: 'action-marker' }, '▸ '));
+  inspect.appendChild(el('span', { class: 'action-name' }, 'Read the file · inspect'));
+  const inspectTail = el('span', { class: 'action-tail' });
+  inspectTail.appendChild(el('span', { class: 'action-tag' }, 'study'));
+  inspect.appendChild(inspectTail);
+  inspect.addEventListener('click', () => openInspectModal(state.ef.creature));
+  inspect.addEventListener('mouseenter', () => fillInspectDetail(detail));
+  inspect.addEventListener('focus',      () => fillInspectDetail(detail));
+  list.appendChild(inspect);
 
   if (initialKey) fillDetail(detail, initialKey);
 
@@ -423,9 +433,6 @@ function actionMenuEl() {
   return wrap;
 }
 
-// Right-pane detail for the focused ability — verbose effect + optional
-// flavor + phase note. Both effect and flavor go through parseProse so
-// authored markup (~~strike~~, [[N]], **gold**) renders.
 function fillDetail(node, key) {
   const a = ABILITIES[key];
   if (!a) return;
@@ -456,16 +463,30 @@ function fillSwapDetail(node) {
   const eff = el('div', { class: 'detail-effect' });
   eff.innerHTML = parseProse(`Pass the turn. ${displayName(c)} steps forward to take the next blow.`);
   node.appendChild(eff);
+  const fl = el('div', { class: 'detail-flavor' });
+  fl.innerHTML = parseProse('Priority +3 — the swap goes first. Cursed creatures take Broken damage on the way out.');
+  node.appendChild(fl);
 }
 
-// Element-matchup mark — small + or − beside the name when the ability
-// has element advantage/disadvantage against the current enemy.
-function matchupTagEl(a) {
+function fillInspectDetail(node) {
+  node.innerHTML = '';
+  const eff = el('div', { class: 'detail-effect' });
+  eff.innerHTML = parseProse(`Open the patient's file. Read what staff have written.`);
+  node.appendChild(eff);
+  const fl = el('div', { class: 'detail-flavor' });
+  fl.innerHTML = parseProse('Reveals abilities, passives, growths. The page does not become you.');
+  node.appendChild(fl);
+}
+
+// Element-matchup chip — a clear EFF/RES pill rather than a tiny ±.
+function matchupChipEl(a) {
   if (!a.element || !state.ef || !state.ef.creature) return null;
   if (!abilityHasDamage(a)) return null;
   const m = TYPE_CHART[a.element]?.[state.ef.creature.type];
   if (m == null || m === 1) return null;
-  return el('span', { class: 'action-row-matchup ' + (m > 1 ? 'good' : 'bad') }, m > 1 ? '+' : '−');
+  const cls = m > 1 ? 'good' : 'bad';
+  const text = m > 1 ? 'eff' : 'res';
+  return el('span', { class: 'action-row-matchup ' + cls }, text);
 }
 
 function queuedActionRow() {
@@ -531,16 +552,6 @@ function composureWord(f) {
 
 function abilityFlatEffects(a) { return (a && a.phases ? a.phases : []).flat(); }
 function abilityHasDamage(a) { return abilityFlatEffects(a).some(e => e.type === 'damage'); }
-function abilityDamageEffect(a) {
-  const phase0 = (a.phases && a.phases[0]) || [];
-  return phase0.find(e => e.type === 'damage');
-}
-function phasePowerFor(a, phaseIdx) {
-  const phase = (a && a.phases) ? (a.phases[phaseIdx] || []) : [];
-  let total = 0;
-  for (const e of phase) if (e.type === 'damage') total += (e.power || 0) * (e.hits || 1);
-  return total;
-}
 function abilityKindTag(a) {
   const flat = abilityFlatEffects(a);
   if (flat.some(e => e.type === 'damage'))         return null;
@@ -552,8 +563,3 @@ function abilityKindTag(a) {
   if (flat.some(e => e.type === 'bracing'))        return 'brace';
   return null;
 }
-
-// Right-side gameplay hint on each action row: power value for damage
-// (actionRowHintEl removed — element matchup is now rendered inline in the
-// rich row's name line via matchupTagEl; the verbose effect string carries
-// power and phase info without a separate tag column.)
