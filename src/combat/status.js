@@ -19,15 +19,23 @@ export function applyStatus(f, type, opts) {
     return true;
   }
   if (type === 'soaking') {
-    f.statuses.soaking = { turns, atkMult: opts.atkMult ?? def.atkMult ?? 0.5 };
+    f.statuses.soaking = {
+      turns,
+      atkMult: opts.atkMult ?? def.atkMult ?? 0.7,
+      spdMult: opts.spdMult ?? def.spdMult ?? 0.7,
+    };
     return true;
   }
   if (type === 'cursed') {
-    f.statuses.cursed = { turns, percentOnSwap: opts.pct ?? def.percentOnSwap };
+    f.statuses.cursed = {
+      turns,
+      percentOnSwap: opts.pct ?? def.percentOnSwap,
+      vulnerability: opts.vulnerability ?? def.vulnerability ?? 0.25,
+    };
     return true;
   }
   if (type === 'dazed') {
-    f.statuses.dazed = { turns };
+    f.statuses.dazed = { turns, skipChance: opts.skipChance ?? def.skipChance ?? 0.35 };
     return true;
   }
   return false;

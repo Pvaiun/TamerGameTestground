@@ -1,4 +1,4 @@
-import { ABILITIES, STATUSES } from '../data.js';
+import { ABILITIES, STATUSES, RELICS } from '../data.js';
 import { sleep } from '../rng.js';
 import { state, pushLog, TOTAL_WAVES } from '../state.js';
 import { displayName, gainXp, freshFighter } from '../creature.js';
@@ -20,8 +20,18 @@ import { drainLog, snapLog, useLine, hitLine, flavorLine, eventText } from './lo
 
 const lower = (s) => String(s || '');
 
-// Self-swap helper. Used by the `swap` effect when target=self.
-// `swapEff` is the effect instance, which carries optional buffOnSwap/healOnSwap.
+// Sum a relic field across the run.
+function relicAny(field) {
+  if (!state.relics || !state.relics.length) return false;
+  return state.relics.some(r => r && r[field]);
+}
+function relicGet(field) {
+  if (!state.relics || !state.relics.length) return null;
+  const r = state.relics.find(r => r && r[field]);
+  return r ? r[field] : null;
+}
+
+// Self-swap helper for the `swap` effect when target=self.
 async function performSelfSwap(side, attacker, swapEff) {
   const benchFighter = side === 'player' ? state.bf : state.ebf;
   if (!benchFighter || benchFighter.hp <= 0) {
@@ -81,21 +91,34 @@ function applyBattleStartPassives(pf, ef) {
   applyBattleStartPassive(ef, pf, cbs);
 }
 
+// Apply relic effects that fire at battle start.
+function applyRelicBattleStart() {
+  if (!state.relics || !state.relics.length) return;
+  for (const r of state.relics) {
+    if (r.startStatusEnemy && state.ef && state.ef.hp > 0) {
+      applyStatus(state.ef, r.startStatusEnemy, {});
+    }
+  }
+}
+
 export function beginBattle() {
   const playerActive = state.party[state.activeIdx];
   const playerBench = state.party[1 - state.activeIdx] || null;
   state.pf = freshFighter(playerActive);
   state.bf = playerBench ? freshFighter(playerBench) : null;
+  if (state.bf) state.bf.onBench = true;
   state.enemyActiveIdx = 0;
   state.ef = freshFighter(state.enemyParty[0]);
   state.ebf = state.enemyParty.length > 1 ? freshFighter(state.enemyParty[1]) : null;
+  if (state.ebf) state.ebf.onBench = true;
   state.enemy = state.enemyParty[0];
   applyBattleStartPassives(state.pf, state.ef);
   if (state.bf) applyBattleStartPassives(state.bf, state.ef);
   if (state.ebf) applyBattleStartPassives(state.ebf, state.pf);
+  applyRelicBattleStart();
   state.log = [];
   const enemiesDesc = state.enemyParty.map(e => lower(displayName(e))).join(' and ');
-  pushLog(eventText('battle_open', { enemies: enemiesDesc }), { cls: 'eff' });
+  pushLog(eventText('battle_open', { enemies: enemiesDesc }), { cls: 'eff', pause: 200 });
   snapLog();
   state.acting = false;
   state.screen = 'battle';
@@ -109,7 +132,6 @@ function fizzleQueued(f) {
   f.queuedAbility = null;
 }
 
-// High-priority swap; opponent still acts on the new active.
 export async function playerSwap() {
   if (state.acting) return;
   if (!state.bf || state.bf.hp <= 0) return;
@@ -146,9 +168,32 @@ export async function playerSwap() {
   }
   if (state.bf && state.bf.hp > 0) await tickFighterStatuses(state.bf, 'player', true);
   if (state.ebf && state.ebf.hp > 0) await tickFighterStatuses(state.ebf, 'enemy', true);
+  // Bench tick relic
+  if (state.relics && state.relics.length && state.bf && state.bf.hp > 0) {
+    for (const r of state.relics) if (r.benchTickHeal) {
+      const amt = Math.round(state.bf.creature.maxHp * r.benchTickHeal);
+      applyHeal(state.bf, amt);
+    }
+  }
   await handleFaintsIfAny();
   state.acting = false;
   render();
+}
+
+// Try to revive a fallen player party using the letter-from-outside relic.
+function tryRevive() {
+  if (!state.relics || state.usedRevive) return false;
+  const reviver = state.relics.find(r => r && r.reviveOnce);
+  if (!reviver) return false;
+  // Pick the one with the most max HP from the party that's currently downed.
+  const candidates = [state.pf, state.bf].filter(f => f && f.hp <= 0);
+  if (!candidates.length) return false;
+  candidates.sort((a, b) => b.creature.maxHp - a.creature.maxHp);
+  const target = candidates[0];
+  target.hp = Math.max(1, Math.round(target.creature.maxHp * reviver.reviveOnce));
+  state.usedRevive = true;
+  pushLog(`The letter is opened. ${displayName(target.creature)} stands again.`, { cls: 'eff', heal: target.hp });
+  return true;
 }
 
 export async function handleFaintsIfAny() {
@@ -167,9 +212,14 @@ export async function handleFaintsIfAny() {
       pushLog(eventText('step_in', { actor: lower(displayName(state.pf.creature)) }), { cls: 'eff' });
       await drainLog();
     } else {
-      state.screen = 'gameover';
-      render();
-      return false;
+      // last creature down; check revive relic
+      if (tryRevive()) {
+        await drainLog();
+      } else {
+        state.screen = 'gameover';
+        render();
+        return false;
+      }
     }
   }
   if (state.ef.hp <= 0) {
@@ -222,8 +272,12 @@ export async function playerAct(abilityKey) {
     }
   }
 
-  const pPrio = playerAbility.priority || 0;
+  let pPrio = playerAbility.priority || 0;
   const ePrio = enemyAbility.priority || 0;
+  // First-turn priority relic
+  if (state.relics && state.relics.length && (state.pf.attacksMade || 0) === 0) {
+    for (const r of state.relics) if (r.priorityFirstTurn) pPrio += r.priorityFirstTurn;
+  }
   const pSpd = effectiveStat(state.pf, 'spd');
   const eSpd = effectiveStat(state.ef, 'spd');
   let pFirst;
@@ -265,6 +319,13 @@ export async function playerAct(abilityKey) {
 
   if (state.bf && state.bf.hp > 0) await tickFighterStatuses(state.bf, 'player', true);
   if (state.ebf && state.ebf.hp > 0) await tickFighterStatuses(state.ebf, 'enemy', true);
+  // bench-tick relic heal
+  if (state.relics && state.relics.length && state.bf && state.bf.hp > 0) {
+    for (const r of state.relics) if (r.benchTickHeal) {
+      const amt = Math.round(state.bf.creature.maxHp * r.benchTickHeal);
+      applyHeal(state.bf, amt);
+    }
+  }
 
   const cont = await handleFaintsIfAny();
   if (!cont) return;
@@ -273,12 +334,7 @@ export async function playerAct(abilityKey) {
   render();
 }
 
-// Run a single phase of an ability. Effects are grouped by timing:
-//   1. "before" effects (hp_cost, buff, etc.)
-//   2. dazed check (50% skip)
-//   3. damage effects, in declaration order; "eachHit" effects fire after each landed hit
-//   4. "after" effects (apply_status, swap, etc.)
-// Multi-phase abilities queue the next phase on the attacker via attacker.queuedAbility.
+// Resolve a single phase of an ability.
 export async function resolveAction(side, attacker, defender, ability, phaseIdx = 0) {
   const oside = side === 'player' ? 'enemy' : 'player';
   const phases = ability.phases || [[]];
@@ -286,9 +342,6 @@ export async function resolveAction(side, attacker, defender, ability, phaseIdx 
   const helpers = { performSelfSwap };
   const baseCtx = { side, oside, attacker, defender, helpers, lastDmg: 0 };
 
-  // Phase log line — for multi-phase abilities, the prepare/continue/unleash
-  // beat takes the place of the regular use line. For single-phase, the
-  // attacker's voice "use" line plays with their lunge animation.
   if (phases.length > 1) {
     const evt = phaseIdx === 0 ? 'phase_prepare'
               : phaseIdx === phases.length - 1 ? 'phase_unleash'
@@ -301,26 +354,21 @@ export async function resolveAction(side, attacker, defender, ability, phaseIdx 
   } else {
     pushLog(useLine(attacker, ability), { anim: () => playLunge(side) });
     await drainLog();
-    const flavor = flavorLine(attacker, ability);
-    if (flavor) {
-      pushLog(flavor, { cls: 'flavor' });
-      await drainLog();
-    }
   }
 
-  // 1. Before-timed effects.
+  // Before-timed effects.
   await runTimedEffects('before', phase, baseCtx);
   await drainLog();
 
-  // 2. Dazed check.
-  if (attacker.statuses && attacker.statuses.dazed && Math.random() < (STATUSES.dazed?.skipChance ?? 0.5)) {
+  // Dazed check.
+  if (attacker.statuses && attacker.statuses.dazed && Math.random() < (attacker.statuses.dazed.skipChance ?? 0.35)) {
     pushLog(eventText('dazed_skip', { actor: lower(displayName(attacker.creature)) }), { cls: 'eff' });
     await drainLog();
     advanceQueue(attacker, ability, phaseIdx);
     return;
   }
 
-  // 3. Damage effects (and eachHit-timed effects per landed hit).
+  // Damage effects.
   const dmgEffects = phase.filter(e => e.type === 'damage');
   for (const dmgEff of dmgEffects) {
     const targetKeys = effParam(dmgEff, 'targets') || ['enemy'];
@@ -341,6 +389,7 @@ export async function resolveAction(side, attacker, defender, ability, phaseIdx 
             continue;
           }
           target.hp = Math.max(0, target.hp - result.dmg);
+          // Compose hit text with super/resist tag inline so it's one line, not two.
           const hitText = hitLine(attacker, target, ability);
           const cls = result.crit ? 'crit' : (result.mult !== 1 ? 'eff' : '');
           pushLog(hitText, {
@@ -357,28 +406,25 @@ export async function resolveAction(side, attacker, defender, ability, phaseIdx 
           await drainLog();
           if (h === 0 && result.mult !== 1) {
             const evt = result.mult > 1 ? 'super' : 'resist';
-            pushLog(eventText(evt), { cls: result.mult > 1 ? '' : '' });
+            pushLog(eventText(evt), { cls: 'eff', pause: 200 });
             await drainLog();
           }
           processPostHit(side, oside, attacker, target, ability, result);
           await runEachHitEffects(phase, { ...baseCtx, defender: target, lastDmg: result.dmg });
+          attacker.attacksMade = (attacker.attacksMade || 0) + 1;
           await drainLog();
         }
       }
     }
   }
 
-  // 4. After-timed effects.
+  // After-timed effects.
   await runTimedEffects('after', phase, baseCtx);
   await drainLog();
 
-  // Advance phase queue.
   advanceQueue(attacker, ability, phaseIdx);
 }
 
-// Resolve a target key into the corresponding fighter list for damage. Mirrors
-// resolveTargets in abilities.js but is duplicated here to avoid a circular dep
-// while keeping damage routing local.
 function resolveTargetsForDamage(targetKey, side, attacker, defender) {
   const ownBench   = side === 'player' ? state.bf  : state.ebf;
   const enemyBench = side === 'player' ? state.ebf : state.bf;
@@ -407,7 +453,11 @@ export function finishBattleIfDone() {
     return;
   }
   const totalEnemyLevel = state.enemyParty.reduce((sum, e) => sum + e.level, 0);
-  const xpGained = Math.round(totalEnemyLevel * 6 + 20);
+  const eliteMult = state.isEliteBattle ? 1.5 : 1.0;
+  let xpGained = Math.round((totalEnemyLevel * 5 + 18) * eliteMult);
+  if (state.relics && state.relics.length) {
+    for (const r of state.relics) if (r.capturedBonusXp) xpGained = Math.round(xpGained * (1 + r.capturedBonusXp));
+  }
   const xpReports = [];
   let anyLeveled = false;
   const allCreatures = [...state.party, ...state.reserve];
@@ -422,8 +472,10 @@ export function finishBattleIfDone() {
     xpReports,
     capturedChoices: [...state.enemyParty],
     capturedSelected: null,
+    isElite: state.isEliteBattle,
   };
   state.screen = 'aftermath';
   for (const c of state.party) c.maxHp = c.stats.hp;
+  state.isEliteBattle = false;
   render();
 }

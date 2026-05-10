@@ -4,14 +4,12 @@ import { MAX_LEVEL, nextCreatureId, state } from './state.js';
 
 export function makeCreature(template, level = 1, options = {}) {
   // Build stats from base, then apply per-level growth.
-  // HP gets 4x scaling because HP numbers are ~5x other stats; without scaling, S-rank HP growth
-  // would only add ~3 HP/level, which feels worthless. With 4x: S HP growth = ~10 HP/level.
   const stats = { ...template.baseStats };
   for (let l = 2; l <= level; l++) {
-    stats.hp  += Math.max(1, Math.round(template.growth.hp  * 4 + rand(-0.5, 1)));
-    stats.atk += Math.max(0, Math.round(template.growth.atk * 2 + rand(-0.5, 1)));
-    stats.def += Math.max(0, Math.round(template.growth.def * 2 + rand(-0.5, 1)));
-    stats.spd += Math.max(0, Math.round(template.growth.spd * 2 + rand(-0.5, 1)));
+    stats.hp  += Math.max(2, Math.round(template.growth.hp  * 4 + rand(-0.5, 1)));
+    stats.atk += Math.max(1, Math.round(template.growth.atk * 1.8 + rand(-0.3, 0.8)));
+    stats.def += Math.max(0, Math.round(template.growth.def * 1.6 + rand(-0.3, 0.8)));
+    stats.spd += Math.max(0, Math.round(template.growth.spd * 1.6 + rand(-0.3, 0.8)));
   }
   stats.hp  = Math.max(8, stats.hp);
   stats.atk = Math.max(2, stats.atk);
@@ -19,8 +17,6 @@ export function makeCreature(template, level = 1, options = {}) {
   stats.spd = Math.max(1, stats.spd);
 
   const abilities = options.abilities || pickN(template.abilityPool, 4);
-  // Each species has TWO unique passives. The creature rolls one of them on creation
-  // (70% primary, 30% secondary) — never both.
   let passives;
   if (options.passives) {
     passives = options.passives;
@@ -48,8 +44,8 @@ export function makeCreature(template, level = 1, options = {}) {
   };
 }
 
-// XP curve scales for level cap of 50. Total XP from L1 to L50 ≈ 30,500.
-export function xpToNext(level) { return level * 25; }
+// XP curve: total XP from L1 to L20 ≈ 1500. Progression meaningful through 10 waves.
+export function xpToNext(level) { return 14 + level * 9; }
 
 export function gainXp(creature, amount) {
   const events = [];
@@ -58,10 +54,10 @@ export function gainXp(creature, amount) {
   while (creature.xp >= xpToNext(creature.level) && creature.level < MAX_LEVEL) {
     creature.xp -= xpToNext(creature.level);
     creature.level++;
-    const dHp  = Math.max(1, Math.round(creature.growth.hp  * 4 + rand(-0.5, 1.5)));
-    const dAtk = Math.max(0, Math.round(creature.growth.atk * 2 + rand(-0.5, 1.5)));
-    const dDef = Math.max(0, Math.round(creature.growth.def * 2 + rand(-0.5, 1.5)));
-    const dSpd = Math.max(0, Math.round(creature.growth.spd * 2 + rand(-0.5, 1.5)));
+    const dHp  = Math.max(2, Math.round(creature.growth.hp  * 4 + rand(-0.3, 1.2)));
+    const dAtk = Math.max(1, Math.round(creature.growth.atk * 1.8 + rand(-0.2, 1.0)));
+    const dDef = Math.max(0, Math.round(creature.growth.def * 1.6 + rand(-0.2, 1.0)));
+    const dSpd = Math.max(0, Math.round(creature.growth.spd * 1.6 + rand(-0.2, 1.0)));
     creature.stats.hp += dHp;
     creature.stats.atk += dAtk;
     creature.stats.def += dDef;
@@ -73,10 +69,6 @@ export function gainXp(creature, amount) {
   return events;
 }
 
-// Same threshold across all stats so a "B HP" and a "B ATK" mean the same growth quality.
-// Thresholds come from data/globals.json so designers can rebalance the grade scale
-// without editing code; we treat the numeric growth value as the source of truth and
-// only relabel here.
 export function growthRank(g) {
   for (const t of GLOBALS.growthThresholds) {
     if (g >= t.min) return t.grade;
@@ -97,9 +89,6 @@ export function displayName(c) {
   return (t && t.name) || c.species;
 }
 
-// Field notes for the dossier, optionally augmented with wave-keyed appended
-// lines. The protagonist's file (species 'Lumenpup') gets new lines at waves
-// 3, 6, 9 — the file fills in as the run descends.
 export function getDossierNotes(c) {
   const base = (VOICE.notes[c.species] || VOICE.notes[c.type] || ['—', '—', '—']).slice();
   const appends = VOICE.noteAppends && VOICE.noteAppends[c.species];
@@ -111,8 +100,7 @@ export function getDossierNotes(c) {
   return base;
 }
 
-// In-battle wrapper around a creature. Holds mutable battle state (hp, statuses, mods)
-// separate from the creature object so the underlying creature is unchanged after a fight.
+// In-battle wrapper around a creature.
 export function freshFighter(c) {
   return {
     creature: c,

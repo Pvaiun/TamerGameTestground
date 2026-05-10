@@ -8,23 +8,23 @@
   ],
   "TYPE_CHART": {
     "fire": {
-      "fire": 1,
-      "water": 1,
-      "grass": 1.25,
+      "fire": 0.7,
+      "water": 0.7,
+      "grass": 1.5,
       "light": 1,
       "dark": 1
     },
     "water": {
-      "fire": 1.25,
-      "water": 1,
-      "grass": 1,
+      "fire": 1.5,
+      "water": 0.7,
+      "grass": 0.7,
       "light": 1,
       "dark": 1
     },
     "grass": {
-      "fire": 1,
-      "water": 1.25,
-      "grass": 1,
+      "fire": 0.7,
+      "water": 1.5,
+      "grass": 0.7,
       "light": 1,
       "dark": 1
     },
@@ -32,15 +32,15 @@
       "fire": 1,
       "water": 1,
       "grass": 1,
-      "light": 1,
-      "dark": 1.25
+      "light": 0.7,
+      "dark": 1.5
     },
     "dark": {
       "fire": 1,
       "water": 1,
       "grass": 1,
-      "light": 1.25,
-      "dark": 1
+      "light": 1.5,
+      "dark": 0.7
     }
   },
   "TYPE_PALETTE": {

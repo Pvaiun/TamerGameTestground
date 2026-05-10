@@ -1,14 +1,16 @@
 import { el, app } from './dom.js';
-import { state, TOTAL_WAVES } from '../state.js';
-import { generateEnemyParty, generateBossParty, partyAvgLevel } from '../encounter.js';
+import { state, TOTAL_WAVES, BREED_WAVES } from '../state.js';
+import {
+  generateEnemyParty, generateBossParty, generateElitePair, partyAvgLevel,
+} from '../encounter.js';
 import { renderBattle } from './battle.js';
 import {
   renderHeader, renderStart, renderStarterPick, renderBloodlineReady,
-  renderPreBattle, renderAftermath, renderBreed, renderVictory, renderGameover,
+  renderPreBattle, renderAftermath, renderBreed, renderBreedOffer, renderPath,
+  renderRecords, renderTend, renderVictory, renderGameover,
 } from './screens.js';
 
-// Main dispatcher. Clears the app root, draws title + optional header, then dispatches
-// to the screen renderer for state.screen. Called after every state mutation.
+// Main dispatcher.
 export function render() {
   const root = app();
   root.innerHTML = '';
@@ -26,23 +28,57 @@ export function render() {
     case 'prebattle': renderPreBattle(); break;
     case 'battle': renderBattle(); break;
     case 'aftermath': renderAftermath(); break;
+    case 'breed_offer': renderBreedOffer(); break;
     case 'breed': renderBreed(); break;
+    case 'path': renderPath(); break;
+    case 'records': renderRecords(); break;
+    case 'tend': renderTend(); break;
     case 'victory': renderVictory(); break;
     case 'gameover': renderGameover(); break;
   }
 }
 
-// Shared wave-advance helper. Lives here (not in state.js) so it can call render()
-// and use encounter generators without creating circular imports through state.
+// Wave-advance — used after path picker / breed ritual completes.
+// Generates the appropriate enemy party for the room kind and routes to prebattle.
 export function advanceWave() {
   state.wave++;
   if (state.wave > TOTAL_WAVES) { state.screen = 'victory'; render(); return; }
-  state.enemyParty = state.wave === TOTAL_WAVES
-    ? generateBossParty(partyAvgLevel(state.party))
-    : generateEnemyParty(state.wave, partyAvgLevel(state.party));
+  const partyLvl = partyAvgLevel(state.party);
+  if (state.wave === TOTAL_WAVES) {
+    state.enemyParty = generateBossParty(partyLvl);
+    state.isEliteBattle = true;
+  } else if (state.pendingRoomKind === 'elite') {
+    state.enemyParty = generateElitePair(state.wave, partyLvl);
+    state.isEliteBattle = true;
+  } else {
+    state.enemyParty = generateEnemyParty(state.wave, partyLvl);
+    state.isEliteBattle = false;
+  }
   state.enemyActiveIdx = 0;
   state.enemy = state.enemyParty[0];
   for (const c of state.party) c.maxHp = c.stats.hp;
+  state.prebattleSelection = null;
+  state.prebattleLead = false;
   state.screen = 'prebattle';
+  render();
+}
+
+// Routes from aftermath into the appropriate next screen:
+//   - End of wave 10: victory (handled in finishBattleIfDone)
+//   - Just finished a breed wave (3/6/9): offer the ritual
+//   - Otherwise: path picker
+export function routeAfterAftermath() {
+  if (BREED_WAVES.has(state.wave) && (state.party.length + state.reserve.length) >= 2) {
+    state.screen = 'breed_offer';
+    render();
+    return;
+  }
+  // Path screen if the next wave isn't the boss directly.
+  if (state.wave + 1 >= TOTAL_WAVES) {
+    state.pendingRoomKind = 'boss';
+    advanceWave();
+    return;
+  }
+  state.screen = 'path';
   render();
 }

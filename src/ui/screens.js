@@ -1,31 +1,32 @@
 // All non-battle screens, rendered as pages of the same document.
-// Each screen begins with a `// page · subject` tag, body prose in
-// lowercase, content (cards, pickers), and an action row of doc-buttons
-// at the bottom.
 
 import { el, app } from './dom.js';
 import { VERSION } from '../version.js';
-import { TEMPLATES, ABILITIES, PASSIVES, VOICE } from '../data.js';
-import { state, BREED_WAVES, TOTAL_WAVES, resetGame } from '../state.js';
+import { TEMPLATES, ABILITIES, PASSIVES, VOICE, RELICS } from '../data.js';
+import { state, BREED_WAVES, TOTAL_WAVES, PARTY_CAP, resetGame } from '../state.js';
 import { sfx } from '../audio.js';
 import { makeCreature, displayName } from '../creature.js';
 import { generateEnemyParty, partyAvgLevel } from '../encounter.js';
 import { creatureCardEl } from './cards.js';
 import { beginBattle } from '../combat/battle.js';
 import { makeChild, finalizeBreed } from '../breeding.js';
-import { render, advanceWave } from './render.js';
+import { render, advanceWave, routeAfterAftermath } from './render.js';
 import { parseProse } from './textCorrupt.js';
+import { acquireRelic, pickRecordsCandidates, tendCreature, generatePathChoices, applyOwnedPermanentsToCreature } from '../relics.js';
 
-// Global header used between battles (not on battle screen — the
-// engagement strip carries that info there).
+// Global header used between battles.
 export function renderHeader() {
   const next = nextBreed();
-  return el('div', { class: 'doc-strip header-strip' }, [
+  const cells = [
     docStripPart(`Descent ${pad2(state.wave)} of ${pad2(TOTAL_WAVES)}`),
     docStripPart(`With me · ${state.party.length}`),
-    docStripPart(`Behind · ${state.reserve.length}`),
-    docStripPart(next ? `Next writing · descent ${next}` : 'No writing remains'),
-  ]);
+    docStripPart(`In file · ${state.reserve.length}`),
+  ];
+  if ((state.relics || []).length) {
+    cells.push(docStripPart(`Notes · ${state.relics.length}`));
+  }
+  cells.push(docStripPart(next ? `Next ritual · descent ${next}` : 'No ritual remains'));
+  return el('div', { class: 'doc-strip header-strip' }, cells);
 }
 
 function nextBreed() {
@@ -42,7 +43,7 @@ export function renderStart() {
   intro.innerHTML = parseProse([
     'I found the address on a card I do not remember writing. The road ended at the building.',
     'The nurse opened the door before I knocked. She said they were expecting me. She handed me a file. She said it had been waiting.',
-    'Ten descents. One room at a time. On the third, the sixth, and the ninth, the line ~~asks~~ requires a sacrifice — two pairs, two offerings, two written into one. The rest are filed elsewhere.',
+    'Ten descents. One room at a time. Some rooms are paperwork. Some are patients. On the third, sixth, and ninth, the line ~~asks~~ requires a sacrifice — two written into one.',
     '!!The door at the top is locked from this side.!!',
   ].join('\n\n'));
   page.appendChild(intro);
@@ -68,7 +69,6 @@ export function renderStart() {
 // ── starter pick ─────────────────────────────────────────────────────
 export function renderStarterPick() {
   const idx = state.party.length;
-  const total = 2;
   const page = docPage('// Admission · the file is ~~asked~~ required');
 
   const intro = el('div', { class: 'doc-prose' });
@@ -111,30 +111,34 @@ export function renderBloodlineReady() {
 
   page.appendChild(actionRow(
     docButton('descend', () => {
-      state.wave = 1;
-      state.enemyParty = generateEnemyParty(state.wave, partyAvgLevel(state.party));
-      state.enemyActiveIdx = 0;
-      state.enemy = state.enemyParty[0];
-      state.screen = 'prebattle';
-      render();
+      state.pendingRoomKind = 'battle';
+      advanceWave();
     })
   ));
   app().appendChild(page);
 }
 
 // ── prebattle ────────────────────────────────────────────────────────
+// Prebattle has two stages: roster (pick which 2 to bring if reserve is non-empty)
+// and lead (pick which of those 2 leads). If the player has only 2 creatures total,
+// roster is auto-skipped.
 export function renderPreBattle() {
   const isBoss = state.wave === TOTAL_WAVES;
+  const isElite = state.isEliteBattle && !isBoss;
   const tag = isBoss
     ? '// Engagement · the tenth · they are at the door'
-    : `// Engagement · descent ${pad2(state.wave)} · they approach`;
+    : isElite
+      ? `// Engagement · descent ${pad2(state.wave)} · ~~deeper~~ a deeper room`
+      : `// Engagement · descent ${pad2(state.wave)} · they approach`;
   const page = docPage(tag);
 
   const intro = el('div', { class: 'doc-prose' });
   intro.innerHTML = parseProse(
     isBoss
       ? 'They are at the door. All of them. I did not ~~choose~~ expect them this soon. !!The page thins where I am.!!'
-      : 'Another room. Another file across the desk. I count them. I write down what I can ~~hold~~ keep.'
+      : isElite
+        ? 'A door I had not noticed. Something heavier is on the other side.'
+        : 'Another room. Another file across the desk. I count them. I write down what I can ~~hold~~ keep.'
   );
   page.appendChild(intro);
 
@@ -142,6 +146,49 @@ export function renderPreBattle() {
   const enemyList = el('div', { class: 'doc-card-list' });
   for (const e of state.enemyParty) enemyList.appendChild(creatureCardEl(e));
   page.appendChild(enemyList);
+
+  // Roster picker: show when reserve has options AND user hasn't confirmed yet.
+  if (state.reserve.length > 0 && !state.prebattleLead) {
+    if (!state.prebattleSelection) {
+      state.prebattleSelection = state.party.map(c => c.id);
+    }
+    const sel = state.prebattleSelection;
+    page.appendChild(el('div', { class: 'sec-label-doc' }, `─ Who I take in · ${sel.length} of 2 ─`));
+    const all = [...state.party, ...state.reserve];
+    const list = el('div', { class: 'doc-card-list' });
+    for (const c of all) {
+      const isSel = sel.includes(c.id);
+      list.appendChild(creatureCardEl(c, {
+        selectable: true,
+        selected: isSel,
+        onclick: () => {
+          if (isSel) state.prebattleSelection = sel.filter(id => id !== c.id);
+          else if (sel.length < 2) state.prebattleSelection = [...sel, c.id];
+          render();
+        },
+      }));
+    }
+    page.appendChild(list);
+    if (sel.length < 1) {
+      page.appendChild(actionRow(docButton('Pick at least one', () => {}, 'small')));
+      app().appendChild(page);
+      return;
+    }
+    page.appendChild(actionRow(docButton('Confirm — pick lead next', () => {
+      // Re-compose party + reserve based on selection.
+      const all2 = [...state.party, ...state.reserve];
+      const newParty   = all2.filter(c => sel.includes(c.id));
+      const newReserve = all2.filter(c => !sel.includes(c.id));
+      state.party = newParty;
+      state.reserve = newReserve;
+      state.activeIdx = 0;
+      state.prebattleSelection = null;
+      state.prebattleLead = true;
+      render();
+    })));
+    app().appendChild(page);
+    return;
+  }
 
   page.appendChild(el('div', { class: 'sec-label-doc' }, '─ Who goes first ─'));
   const leadList = el('div', { class: 'doc-card-list' });
@@ -152,6 +199,7 @@ export function renderPreBattle() {
       onclick: () => {
         sfx('select');
         state.activeIdx = i;
+        state.prebattleLead = false;
         beginBattle();
       },
     }));
@@ -192,83 +240,116 @@ export function renderAftermath() {
 
   page.appendChild(el('div', { class: 'sec-label-doc' }, '─ One of them follows ─'));
   const chooseProse = el('div', { class: 'doc-prose dim' });
-  chooseProse.innerHTML = parseProse('I write one of them into the line behind me. The rest are ~~killed~~ filed elsewhere.');
+  chooseProse.innerHTML = parseProse('I write one of them into the line behind me, or I let the room close.');
   page.appendChild(chooseProse);
   const captureList = el('div', { class: 'doc-card-list' });
   for (const candidate of ev.capturedChoices) {
     captureList.appendChild(creatureCardEl(candidate, {
       selectable: true,
       selected: ev.capturedSelected && ev.capturedSelected.id === candidate.id,
-      onclick: () => { ev.capturedSelected = candidate; render(); },
+      onclick: () => {
+        ev.capturedSelected = ev.capturedSelected === candidate ? null : candidate;
+        render();
+      },
     }));
   }
   page.appendChild(captureList);
 
-  const continueLabel = ev.capturedSelected ? 'Descend' : 'Choose one to keep';
-  const btn = docButton(continueLabel, () => {
-    if (!ev.capturedSelected) return;
-    sfx('capture');
-    state.reserve.push(ev.capturedSelected);
-    if (BREED_WAVES.has(state.wave)) {
+  const continueBtn = docButton(ev.capturedSelected ? 'Take them on' : 'Leave them', () => {
+    if (ev.capturedSelected) {
+      sfx('capture');
+      applyOwnedPermanentsToCreature(ev.capturedSelected);
+      state.reserve.push(ev.capturedSelected);
+    }
+    routeAfterAftermath();
+  });
+  page.appendChild(actionRow(continueBtn));
+  app().appendChild(page);
+}
+
+// ── breed offer (optional ritual at waves 3, 6, 9) ───────────────────
+export function renderBreedOffer() {
+  const page = docPage(`// Ritual · descent ${pad2(state.wave)} · the line asks`);
+  const intro = el('div', { class: 'doc-prose' });
+  intro.innerHTML = parseProse(
+    'The line ~~asks~~ requires. I may write two into one. The two I choose will not be on the next page.'
+  );
+  page.appendChild(intro);
+
+  const note = el('div', { class: 'doc-prose dim' });
+  note.innerHTML = parseProse(
+    'I may also let the line wait. **Once the line waits, it does not ask again.**'
+  );
+  page.appendChild(note);
+
+  page.appendChild(actionRow(
+    docButton('Perform the ritual', () => {
       state.breedState = {
-        stage: 'pick_pair_1',
+        stage: 'pick_pair',
         pool: [...state.party, ...state.reserve],
-        picks: [],
         currentPair: [],
+        chosenAbilities: [],
+        chosenPassives: [],
+        passiveOptions: [],
+        abilityOptions: [],
       };
       state.screen = 'breed';
       render();
-    } else {
-      advanceWave();
-    }
-  });
-  if (!ev.capturedSelected) btn.disabled = true;
-  page.appendChild(actionRow(btn));
+    }),
+    docButton('Decline. Walk on.', () => {
+      // Skip ritual for this wave; proceed to path picker.
+      if (state.wave + 1 >= TOTAL_WAVES) {
+        state.pendingRoomKind = 'boss';
+        advanceWave();
+      } else {
+        state.screen = 'path';
+        render();
+      }
+    }, 'small'),
+  ));
   app().appendChild(page);
 }
 
 // ── breed ────────────────────────────────────────────────────────────
 export function renderBreed() {
   const bs = state.breedState;
-  const page = docPage('// Ritual · the file is ~~asked~~ required');
+  const page = docPage('// Ritual · two written into one');
 
-  if (bs.stage === 'pick_pair_1' || bs.stage === 'pick_pair_2') {
-    const pairIdx = bs.stage === 'pick_pair_1' ? 0 : 1;
-    const used = new Set();
-    for (const pair of bs.picks) for (let i = 0; i < 2; i++) used.add(pair[i].id);
-    const currentPair = bs.currentPair || [];
-
+  if (bs.stage === 'pick_pair') {
     const intro = el('div', { class: 'doc-prose' });
     intro.innerHTML = parseProse(
-      `I pick the ${pairIdx === 0 ? 'first' : 'second'} pair. ~~Two of them~~ Two offerings (${currentPair.length}/2). They will be ~~killed~~ written into one. The unchosen are filed into [[6]].`
+      `I pick the two. (${bs.currentPair.length}/2). The chosen will be ~~killed~~ written into one. The unchosen are filed elsewhere.`
     );
     page.appendChild(intro);
 
+    page.appendChild(el('div', { class: 'doc-action-row left' }, [
+      docButton('〈 cancel ritual', () => {
+        // Return to the breed-offer screen so the player can decline instead.
+        state.breedState = null;
+        state.screen = 'breed_offer';
+        render();
+      }, 'small'),
+    ]));
+
     const list = el('div', { class: 'doc-card-list' });
     for (const c of bs.pool) {
-      const pickedNow = currentPair.find(p => p.id === c.id);
-      const pickedEarlier = used.has(c.id);
+      const pickedNow = bs.currentPair.find(p => p.id === c.id);
       list.appendChild(creatureCardEl(c, {
-        selectable: !pickedEarlier,
+        selectable: true,
         selected: !!pickedNow,
-        dimmed: pickedEarlier,
-        onclick: pickedEarlier ? null : () => {
-          if (pickedNow) bs.currentPair = currentPair.filter(p => p.id !== c.id);
-          else if (currentPair.length < 2) bs.currentPair = [...currentPair, c];
-          if ((bs.currentPair || []).length === 2) {
-            bs.stage = pairIdx === 0 ? 'config_pair_1' : 'config_pair_2';
+        onclick: () => {
+          if (pickedNow) bs.currentPair = bs.currentPair.filter(p => p.id !== c.id);
+          else if (bs.currentPair.length < 2) bs.currentPair = [...bs.currentPair, c];
+          if (bs.currentPair.length === 2) {
             const [pa, pb] = bs.currentPair;
             bs.abilityOptions = Array.from(new Set([...pa.abilities, ...pb.abilities]));
             const pmap = {};
-            for (const k of pa.passives || []) {
-              if (k) pmap[k] = pmap[k] === 'b' ? 'both' : 'a';
-            }
-            for (const k of pb.passives || []) {
-              if (k) pmap[k] = pmap[k] === 'a' ? 'both' : (pmap[k] === 'both' ? 'both' : 'b');
-            }
+            for (const k of pa.passives || []) if (k) pmap[k] = pmap[k] === 'b' ? 'both' : 'a';
+            for (const k of pb.passives || []) if (k) pmap[k] = pmap[k] === 'a' ? 'both' : 'b';
             bs.passiveOptions = Object.entries(pmap).map(([key, owner]) => ({ key, owner }));
             bs.chosenAbilities = [];
             bs.chosenPassives = [];
+            bs.stage = 'config';
           }
           render();
         },
@@ -279,19 +360,17 @@ export function renderBreed() {
     return;
   }
 
-  if (bs.stage === 'config_pair_1' || bs.stage === 'config_pair_2') {
-    const pairIdx = bs.stage === 'config_pair_1' ? 0 : 1;
+  if (bs.stage === 'config') {
     const [pa, pb] = bs.currentPair;
-
     const intro = el('div', { class: 'doc-prose' });
     intro.innerHTML = parseProse(
-      `I write the offspring for pair ${pairIdx + 1}. Four ~~things it can do~~ actions. Two qualities. The first quality decides what shape the new one takes. It will not be either of them.`
+      'I write the offspring. Four ~~things it can do~~ actions. Two qualities. The first quality decides the shape. It will not be either of them.'
     );
     page.appendChild(intro);
 
     page.appendChild(el('div', { class: 'doc-action-row left' }, [
       docButton('〈 ~~Undo~~ Pick different offerings', () => {
-        bs.stage = pairIdx === 0 ? 'pick_pair_1' : 'pick_pair_2';
+        bs.stage = 'pick_pair';
         bs.currentPair = [];
         bs.chosenAbilities = [];
         bs.chosenPassives = [];
@@ -312,6 +391,7 @@ export function renderBreed() {
       const picked = bs.chosenAbilities.includes(k);
       aRow.appendChild(el('button', {
         class: 'pick-btn' + (picked ? ' picked' : ''),
+        title: a ? a.effect : '',
         onclick: () => {
           if (picked) bs.chosenAbilities = bs.chosenAbilities.filter(x => x !== k);
           else if (bs.chosenAbilities.length < 4) bs.chosenAbilities.push(k);
@@ -365,10 +445,7 @@ export function renderBreed() {
       page.appendChild(actionRow(
         docButton('Confirm the writing', () => {
           sfx('victory');
-          bs.picks.push([pa, pb, child]);
-          bs.currentPair = [];
-          if (pairIdx === 0) { bs.stage = 'pick_pair_2'; render(); }
-          else { finalizeBreed(); }
+          finalizeBreed(pa, pb, child);
         })
       ));
     }
@@ -376,6 +453,214 @@ export function renderBreed() {
     return;
   }
 
+  app().appendChild(page);
+}
+
+// ── path picker ──────────────────────────────────────────────────────
+export function renderPath() {
+  const page = docPage(`// Corridor · descent ${pad2(state.wave + 1)} · ahead`);
+  const intro = el('div', { class: 'doc-prose' });
+  intro.innerHTML = parseProse(
+    'Three doors in front of me. I have walked past them before. They have not all been there.'
+  );
+  page.appendChild(intro);
+
+  if (!state.pathChoices) state.pathChoices = generatePathChoices(state.wave + 1);
+  const choices = state.pathChoices;
+
+  const list = el('div', { class: 'doc-card-list' });
+  for (const ch of choices) {
+    const card = el('div', { class: 'doc-card selectable inspectable path-card' });
+    card.appendChild(el('span', { class: 'doc-card-marker' }, '▸ '));
+    const glyph = el('div', { class: 'doc-card-glyph path-glyph' });
+    glyph.appendChild(el('span', { class: 'path-icon' }, pathIcon(ch.kind)));
+    card.appendChild(glyph);
+    const body = el('div', { class: 'doc-card-body' });
+    const head = el('div', { class: 'doc-card-head' });
+    head.appendChild(el('span', { class: 'doc-card-name' }, ch.label));
+    head.appendChild(el('span', { class: 'doc-card-meta' }, pathKindMeta(ch.kind)));
+    body.appendChild(head);
+    const desc = el('div', { class: 'doc-card-subtitle' });
+    desc.innerHTML = parseProse(pathDescriptions(ch.kind));
+    body.appendChild(desc);
+    card.appendChild(body);
+    card.addEventListener('click', () => {
+      sfx('select');
+      enterPath(ch.kind);
+    });
+    list.appendChild(card);
+  }
+  page.appendChild(list);
+  app().appendChild(page);
+}
+
+function pathIcon(kind) {
+  return ({
+    battle: '◇',
+    elite: '◆',
+    records: '✕',
+    tend: '⊕',
+    boss: '●',
+  })[kind] || '·';
+}
+
+function pathKindMeta(kind) {
+  return ({
+    battle: 'patient',
+    elite: 'deeper room',
+    records: 'records hall',
+    tend: 'treatment',
+    boss: 'the door',
+  })[kind] || '';
+}
+
+function pathDescriptions(kind) {
+  switch (kind) {
+    case 'battle':  return 'A patient. Two more files. The line continues.';
+    case 'elite':   return 'A heavier file. Larger reward — a relic. !!And worse waiting.!!';
+    case 'records': return 'A wall of paper. I take ~~one~~ a single page with me.';
+    case 'tend':    return 'Quiet room. One of mine grows steadier here.';
+    case 'boss':    return 'Open the door.';
+    default:        return '';
+  }
+}
+
+function enterPath(kind) {
+  state.pathChoices = null;
+  if (kind === 'records') {
+    state.pendingRoomKind = 'battle';
+    state.screen = 'records';
+    render();
+    return;
+  }
+  if (kind === 'tend') {
+    state.pendingRoomKind = 'battle';
+    state.screen = 'tend';
+    render();
+    return;
+  }
+  state.pendingRoomKind = kind;
+  advanceWave();
+}
+
+// ── records hall ─────────────────────────────────────────────────────
+export function renderRecords() {
+  const page = docPage(`// Records · descent ${pad2(state.wave + 1)} · paperwork`);
+  const intro = el('div', { class: 'doc-prose' });
+  intro.innerHTML = parseProse(
+    'The hall is wider than the building. Three files have been left where I will see them.'
+  );
+  page.appendChild(intro);
+
+  if (!state.recordsCandidates) {
+    state.recordsCandidates = pickRecordsCandidates(3);
+  }
+  const candidates = state.recordsCandidates;
+  if (!candidates.length) {
+    page.appendChild(el('div', { class: 'doc-prose dim' }, 'The room is empty. I have read everything here.'));
+    page.appendChild(actionRow(docButton('Continue', () => {
+      state.recordsCandidates = null;
+      advanceWave();
+    })));
+    app().appendChild(page);
+    return;
+  }
+
+  const list = el('div', { class: 'doc-card-list' });
+  for (const r of candidates) {
+    const card = el('div', { class: 'doc-card selectable inspectable relic-card' });
+    card.appendChild(el('span', { class: 'doc-card-marker' }, '▸ '));
+    const glyph = el('div', { class: 'doc-card-glyph relic-glyph' });
+    glyph.appendChild(el('span', { class: 'relic-icon' }, '✕'));
+    card.appendChild(glyph);
+    const body = el('div', { class: 'doc-card-body' });
+    const head = el('div', { class: 'doc-card-head' });
+    head.appendChild(el('span', { class: 'doc-card-name' }, r.name));
+    head.appendChild(el('span', { class: 'doc-card-meta' }, 'note'));
+    body.appendChild(head);
+    const sub = el('div', { class: 'doc-card-subtitle' });
+    sub.innerHTML = parseProse(r.voice || '');
+    body.appendChild(sub);
+    body.appendChild(el('div', { class: 'relic-desc' }, r.desc));
+    card.appendChild(body);
+    card.addEventListener('click', () => {
+      sfx('capture');
+      acquireRelic(r);
+      state.recordsCandidates = null;
+      advanceWave();
+    });
+    list.appendChild(card);
+  }
+  page.appendChild(list);
+  page.appendChild(actionRow(docButton('Take nothing', () => {
+    state.recordsCandidates = null;
+    advanceWave();
+  }, 'small')));
+  app().appendChild(page);
+}
+
+// ── tend (treatment room) ────────────────────────────────────────────
+export function renderTend() {
+  const page = docPage(`// Treatment · descent ${pad2(state.wave + 1)} · the quiet room`);
+  const intro = el('div', { class: 'doc-prose' });
+  intro.innerHTML = parseProse(
+    'The room is quieter than the others. One of mine grows steadier here. !!The cost is the room.!!'
+  );
+  page.appendChild(intro);
+
+  if (!state.tendState) {
+    state.tendState = { selectedCreature: null, selectedStat: null };
+  }
+  const ts = state.tendState;
+
+  page.appendChild(el('div', { class: 'sec-label-doc' }, '─ Who steps in ─'));
+  const list = el('div', { class: 'doc-card-list' });
+  const candidates = [...state.party, ...state.reserve];
+  for (const c of candidates) {
+    list.appendChild(creatureCardEl(c, {
+      selectable: true,
+      selected: ts.selectedCreature && ts.selectedCreature.id === c.id,
+      onclick: () => {
+        ts.selectedCreature = ts.selectedCreature === c ? null : c;
+        render();
+      },
+    }));
+  }
+  page.appendChild(list);
+
+  if (ts.selectedCreature) {
+    page.appendChild(el('div', { class: 'sec-label-doc' }, '─ What is tended ─'));
+    const tendChoices = [
+      { stat: 'hp',  delta: 8, label: '+8 max hp' },
+      { stat: 'atk', delta: 2, label: '+2 attack' },
+      { stat: 'def', delta: 2, label: '+2 defense' },
+      { stat: 'spd', delta: 2, label: '+2 speed' },
+    ];
+    const choiceRow = el('div', { class: 'pick-row' });
+    for (const ch of tendChoices) {
+      const isSel = ts.selectedStat === ch.stat;
+      choiceRow.appendChild(el('button', {
+        class: 'pick-btn' + (isSel ? ' picked' : ''),
+        onclick: () => { ts.selectedStat = isSel ? null : ch.stat; render(); },
+      }, [
+        el('span', { class: 'pick-marker' }, isSel ? '▸ ' : '  '),
+        el('span', { class: 'pick-name' }, ch.label),
+      ]));
+    }
+    page.appendChild(choiceRow);
+  }
+
+  const ready = ts.selectedCreature && ts.selectedStat;
+  const goBtn = docButton(ready ? 'Tend them' : 'Pick one to tend', () => {
+    if (!ready) return;
+    const tendChoices = { hp: 8, atk: 2, def: 2, spd: 2 };
+    tendCreature(ts.selectedCreature, ts.selectedStat, tendChoices[ts.selectedStat]);
+    state.tendState = null;
+    sfx('heal');
+    advanceWave();
+  });
+  if (!ready) goBtn.disabled = true;
+  page.appendChild(actionRow(goBtn));
   app().appendChild(page);
 }
 
@@ -394,6 +679,24 @@ export function renderVictory() {
   const note = el('div', { class: 'doc-prose dim' });
   note.innerHTML = parseProse('!!Someone is signing me out.!! The hand is not the one I came in with. ~~The page ends~~ The page does not.');
   page.appendChild(note);
+
+  if (state.relics && state.relics.length) {
+    page.appendChild(el('div', { class: 'sec-label-doc' }, '─ Notes I kept ─'));
+    const rl = el('div', { class: 'doc-card-list' });
+    for (const r of state.relics) {
+      const row = el('div', { class: 'doc-card relic-card' });
+      row.appendChild(el('span', { class: 'doc-card-marker' }, '▸ '));
+      const g = el('div', { class: 'doc-card-glyph relic-glyph' });
+      g.appendChild(el('span', { class: 'relic-icon' }, '✕'));
+      row.appendChild(g);
+      const body = el('div', { class: 'doc-card-body' });
+      body.appendChild(el('div', { class: 'doc-card-name' }, r.name));
+      body.appendChild(el('div', { class: 'relic-desc' }, r.desc));
+      row.appendChild(body);
+      rl.appendChild(row);
+    }
+    page.appendChild(rl);
+  }
 
   page.appendChild(el('div', { class: 'sec-label-doc' }, '─ What came back with me ─'));
   const list = el('div', { class: 'doc-card-list' });
