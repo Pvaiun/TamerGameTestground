@@ -1,9 +1,8 @@
 import { rand, pickN } from './rng.js';
 import { TYPE_PALETTE, TEMPLATES, GLOBALS, VOICE } from './data.js';
-import { MAX_LEVEL, nextCreatureId, state } from './state.js';
+import { MAX_LEVEL, nextCreatureId, state, DEFAULT_ENERGY } from './state.js';
 
 export function makeCreature(template, level = 1, options = {}) {
-  // Build stats from base, then apply per-level growth.
   const stats = { ...template.baseStats };
   for (let l = 2; l <= level; l++) {
     stats.hp  += Math.max(2, Math.round(template.growth.hp  * 4 + rand(-0.5, 1)));
@@ -16,7 +15,24 @@ export function makeCreature(template, level = 1, options = {}) {
   stats.def = Math.max(1, stats.def);
   stats.spd = Math.max(1, stats.spd);
 
-  const abilities = options.abilities || pickN(template.abilityPool, 4);
+  // The species "pool" contains shared abilities + signature abilities.
+  // Signature abilities (template.signatureAbilities) are guaranteed to roll
+  // into the creature's loadout if present; the rest of the slots fill from
+  // the shared pool.
+  let abilities;
+  if (options.abilities) {
+    abilities = options.abilities;
+  } else {
+    const sigs = template.signatureAbilities || [];
+    const shared = (template.abilityPool || []).filter(k => !sigs.includes(k));
+    abilities = [...sigs];
+    while (abilities.length < 4 && shared.length) {
+      const i = Math.floor(Math.random() * shared.length);
+      abilities.push(shared.splice(i, 1)[0]);
+    }
+    abilities = abilities.slice(0, 4);
+  }
+
   let passives;
   if (options.passives) {
     passives = options.passives;
@@ -41,10 +57,12 @@ export function makeCreature(template, level = 1, options = {}) {
     passives,
     palette,
     customName: options.customName || null,
+    // Signature mechanic (set by template). The species-specific stack tracker
+    // resets at battle start. See data/templates.json — `signature: { key, label, max, gainPerTurn? }`.
+    signature: template.signature || null,
   };
 }
 
-// XP curve: total XP from L1 to L20 ≈ 1500. Progression meaningful through 10 waves.
 export function xpToNext(level) { return 14 + level * 9; }
 
 export function gainXp(creature, amount) {
@@ -70,9 +88,7 @@ export function gainXp(creature, amount) {
 }
 
 export function growthRank(g) {
-  for (const t of GLOBALS.growthThresholds) {
-    if (g >= t.min) return t.grade;
-  }
+  for (const t of GLOBALS.growthThresholds) if (g >= t.min) return t.grade;
   return 'F';
 }
 
@@ -100,7 +116,7 @@ export function getDossierNotes(c) {
   return base;
 }
 
-// In-battle wrapper around a creature.
+// In-battle wrapper around a creature. Adds the energy + signature mechanic.
 export function freshFighter(c) {
   return {
     creature: c,
@@ -120,6 +136,10 @@ export function freshFighter(c) {
     pendingSwapHeal: 0,
     onBench: false,
     attacksMade: 0,
+    actionsThisTurn: 0,        // resets each round; drives combo bonus
+    energy: DEFAULT_ENERGY,    // current energy this round
+    maxEnergy: DEFAULT_ENERGY, // base energy per round (some passives may modify)
+    sigStacks: 0,              // signature mechanic stack count
     consumedTriggers: new Set(),
     timedBuffs: [],
   };

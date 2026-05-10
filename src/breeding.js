@@ -46,6 +46,8 @@ export function makeChild(pa, pb, abilities, passives, speciesFromB) {
     passives,
     palette,
     customName: null,
+    // Child inherits the species-shape parent's signature mechanic.
+    signature: template.signature || null,
   };
 }
 

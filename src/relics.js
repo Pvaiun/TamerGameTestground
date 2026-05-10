@@ -1,19 +1,15 @@
-// Relic acquisition + application. Some relics affect persistent state
-// (party hp, etc.) at the moment of acquisition; most apply at runtime via
-// hooks in damage.js, passives.js, battle.js.
+// Relic acquisition + path generation.
 
 import { state } from './state.js';
 import { RELICS } from './data.js';
-import { rand, pickN } from './rng.js';
+import { pickN } from './rng.js';
 
-// Pick N candidate relics for the records hall. Skips already-owned ones.
 export function pickRecordsCandidates(n = 3) {
   const owned = new Set((state.relics || []).map(r => r.id));
   const pool = Object.values(RELICS).filter(r => !owned.has(r.id));
   return pickN(pool, Math.min(n, pool.length));
 }
 
-// Acquire a relic. Applies any one-time effects (perm hp flat etc.) immediately.
 export function acquireRelic(relic) {
   if (!relic) return;
   if (!state.relics) state.relics = [];
@@ -27,9 +23,6 @@ export function acquireRelic(relic) {
   }
 }
 
-// Apply ALL currently-owned relics' permanent bonuses to a newly-acquired
-// creature (capture, breed, starter pick on resume). Idempotent: callers
-// should only invoke once per creature.
 export function applyOwnedPermanentsToCreature(creature) {
   if (!creature || !state.relics || !state.relics.length) return;
   for (const r of state.relics) {
@@ -40,43 +33,53 @@ export function applyOwnedPermanentsToCreature(creature) {
   }
 }
 
-// Apply a permanent stat bump to one creature (treatment-room reward).
 export function tendCreature(creature, stat, amount) {
   if (!creature) return;
   creature.stats[stat] = Math.max(1, (creature.stats[stat] || 0) + amount);
   if (stat === 'hp') creature.maxHp = creature.stats.hp;
 }
 
-// Generate a 3-option path picker for the next descent.
-// Each option leads to that wave's room kind.
+// Path picker generates 3 options for the next descent.
+// EVERY path advances the wave (consuming 1 depth). Different paths give
+// different spoils:
+//   - battle: a fight (xp + capture opportunity)
+//   - elite:  a tougher fight (more xp + a guaranteed relic drop)
+//   - records: a relic but no fight
+//   - tend:   a permanent stat bump but no fight
+// Boss is wave 10, no path choice.
 export function generatePathChoices(wave) {
-  // Wave 10 is always the boss room — no choice.
   if (wave >= 10) return [{ kind: 'boss', label: 'the door' }];
 
-  // Pre-decided weights per wave depth — early waves see more rest options;
-  // later waves more elites.
-  const choices = [];
-  // Always at least one path has combat as the next stop.
-  choices.push({ kind: 'battle', label: 'another room' });
-  // Second slot: weighted random.
-  choices.push(rollPath(wave, 'mid'));
-  // Third slot: weighted random.
-  choices.push(rollPath(wave, 'wild'));
-  return choices;
+  // Always include a battle option (the "default" descent).
+  const battle = { kind: 'battle', label: 'another patient' };
+  // Pick 2 more from the alternative pool, weighted by depth.
+  const alts = ['elite', 'records', 'tend'];
+  // Weights — tend more common early, elite later, records steady.
+  const weights = wave <= 3 ? { records: 3, tend: 4, elite: 1 }
+                : wave <= 6 ? { records: 4, tend: 3, elite: 2 }
+                            : { records: 3, tend: 2, elite: 4 };
+  const pool = [];
+  for (const k of alts) for (let i = 0; i < (weights[k] || 1); i++) pool.push(k);
+
+  function drawUnique(taken) {
+    let tries = 0;
+    while (tries++ < 10) {
+      const k = pool[Math.floor(Math.random() * pool.length)];
+      if (!taken.has(k)) return k;
+    }
+    return alts.find(a => !taken.has(a)) || alts[0];
+  }
+  const picked = new Set();
+  const a = drawUnique(picked); picked.add(a);
+  const b = drawUnique(picked); picked.add(b);
+  return [battle, kindOption(a), kindOption(b)];
 }
 
-function rollPath(wave, slot) {
-  const r = Math.random();
-  // Earlier waves: tend (heal/buff) more common; later waves: elites more common.
-  if (slot === 'mid') {
-    if (r < 0.40) return { kind: 'records', label: 'records hall' };
-    if (r < 0.75) return { kind: 'tend',    label: 'treatment room' };
-    return { kind: 'battle', label: 'another room' };
-  }
-  // wild slot
-  const eliteWeight = wave >= 5 ? 0.40 : 0.20;
-  if (r < eliteWeight)        return { kind: 'elite',   label: 'a deeper room' };
-  if (r < eliteWeight + 0.30) return { kind: 'records', label: 'records hall' };
-  if (r < eliteWeight + 0.55) return { kind: 'tend',    label: 'treatment room' };
-  return { kind: 'battle', label: 'another room' };
+function kindOption(kind) {
+  return ({
+    battle:  { kind: 'battle',  label: 'another patient' },
+    elite:   { kind: 'elite',   label: 'a deeper room' },
+    records: { kind: 'records', label: 'records hall' },
+    tend:    { kind: 'tend',    label: 'treatment room' },
+  })[kind];
 }

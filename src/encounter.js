@@ -39,7 +39,7 @@ export function generateEliteEnemy(wave, partyLevel) {
   c.stats.atk = Math.round(c.stats.atk * 1.20);
   c.stats.def = Math.round(c.stats.def * 1.20);
   c.maxHp = c.stats.hp;
-  c.customName = `[Elite] ${displaySpecies(t)}`;
+  c.customName = `[Elite · ${eliteSpeciesName(t)}]`;
   return c;
 }
 
@@ -63,7 +63,7 @@ export function generateBoss(partyLevel) {
   c.stats.atk = Math.round(c.stats.atk * 1.35);
   c.stats.def = Math.round(c.stats.def * 1.25);
   c.maxHp = c.stats.hp;
-  c.customName = `[Apex] ${displaySpecies(t)}`;
+  c.customName = `[Apex · ${eliteSpeciesName(t)}]`;
   return c;
 }
 
@@ -78,6 +78,6 @@ export function generateBossParty(partyLevel) {
   return [boss1, boss2];
 }
 
-function displaySpecies(t) {
-  return t && t.name ? t.name : t.species;
+function eliteSpeciesName(t) {
+  return t && t.species ? t.species : '?';
 }
