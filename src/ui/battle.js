@@ -9,7 +9,7 @@
 //   4. log panel (gameplay log on left, lore line on right)
 
 import { el, attachLongPress, app } from './dom.js';
-import { ABILITIES, PASSIVES, TYPE_CHART, VOICE } from '../data.js';
+import { ABILITIES, PASSIVES, TYPE_CHART, VOICE, ARCHETYPES } from '../data.js';
 import { affName as voiceAffName } from '../combat/log.js';
 import { state, TOTAL_WAVES } from '../state.js';
 import { displayName, getDossierNotes } from '../creature.js';
@@ -98,13 +98,20 @@ function dossierColEl(active, bench, side) {
   col.appendChild(benchBarEl(bench, side));
 
   const c = active.creature;
-  col.appendChild(el('div', { class: 'doc-title', html: parseProse(displayName(c)) }));
+  // Title with archetype tag pinned beside the name
+  const titleRow = el('div', { class: 'doc-title-row ' + side });
+  titleRow.appendChild(el('div', { class: 'doc-title', html: parseProse(displayName(c)) }));
+  const arch = c.archetype && ARCHETYPES[c.archetype];
+  if (arch) {
+    titleRow.appendChild(el('div', { class: 'arch-tag arch-' + c.archetype }, arch.name.toLowerCase()));
+  }
+  col.appendChild(titleRow);
   col.appendChild(subtitleEl(c));
-  col.appendChild(fieldNotesEl(c, side, active));
   col.appendChild(hpRowEl(active, side));
   col.appendChild(statBlockEl(active, side));
   col.appendChild(sigStackEl(active, side));
   col.appendChild(afflictionsEl(active));
+  col.appendChild(fieldNotesEl(c, side, active));
   col.appendChild(passivesEl(c));
 
   return col;
@@ -237,25 +244,56 @@ function statBlockEl(f, side) {
 }
 
 function sigStackEl(f, side) {
-  const sig = f.creature.signature;
-  if (!sig) return el('div', { style: 'display:none' });
-  const max = sig.max ?? 5;
-  const stacks = f.sigStacks || 0;
-  const wrap = el('div', { class: 'sig-row ' + side });
-  wrap.appendChild(el('span', { class: 'sig-label' }, sig.label.toLowerCase()));
-  const pips = el('span', { class: 'sig-pips' });
-  for (let i = 0; i < max; i++) {
-    pips.appendChild(el('span', { class: 'sig-pip ' + (i < stacks ? 'on' : 'off') }, '◆'));
-  }
-  wrap.appendChild(pips);
-  // Marks (lives on defender, separate from sigStacks)
-  if (f.marks > 0) {
-    const m = el('span', { class: 'sig-marks' });
-    m.appendChild(el('span', { class: 'sig-label' }, 'marks'));
-    for (let i = 0; i < f.marks; i++) m.appendChild(el('span', { class: 'sig-pip on mark' }, '✕'));
-    wrap.appendChild(m);
+  // Show every stack category the creature can interact with. A pure-archetype
+  // creature shows 1 row; a hybrid (from breeding) may show 2+ rows.
+  const wrap = el('div', { class: 'sig-stacks ' + side });
+  const keys = stackKeysFor(f);
+  if (!keys.length) return el('div', { style: 'display:none' });
+  for (const key of keys) {
+    const meta = stackMetaFor(key);
+    if (!meta) continue;
+    const stacks = (f.stacks && f.stacks[key]) || 0;
+    const max = meta.max;
+    const row = el('div', { class: 'sig-row ' + side });
+    row.appendChild(el('span', { class: 'sig-label' }, meta.label.toLowerCase()));
+    const pips = el('span', { class: 'sig-pips' });
+    for (let i = 0; i < max; i++) {
+      pips.appendChild(el('span', { class: 'sig-pip ' + (i < stacks ? 'on' : 'off') + ' k-' + key }, '◆'));
+    }
+    row.appendChild(pips);
+    wrap.appendChild(row);
   }
   return wrap;
+}
+
+// Determine which stack keys this fighter cares about: their archetype's stack
+// plus any stack key referenced by their abilities (hybrids).
+function stackKeysFor(f) {
+  if (!f || !f.creature) return [];
+  const keys = new Set();
+  const arch = f.creature.archetype && ARCHETYPES[f.creature.archetype];
+  if (arch && arch.stack && arch.stack.key) keys.add(arch.stack.key);
+  for (const k of (f.creature.abilities || [])) {
+    const a = ABILITIES[k];
+    if (!a || !a.phases) continue;
+    for (const phase of a.phases) {
+      for (const eff of phase) {
+        if (eff.type === 'sig_gain' && eff.key) keys.add(eff.key);
+        if ((eff.type === 'sig_consume_dmg' || eff.type === 'sig_consume_heal' ||
+             eff.type === 'sig_consume_heal_party' || eff.type === 'sig_consume_status_share') && eff.key) {
+          keys.add(eff.key);
+        }
+      }
+    }
+  }
+  return Array.from(keys);
+}
+
+function stackMetaFor(key) {
+  for (const arch of Object.values(ARCHETYPES)) {
+    if (arch.stack && arch.stack.key === key) return arch.stack;
+  }
+  return null;
 }
 
 function afflictionsEl(f) {

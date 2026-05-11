@@ -1,5 +1,4 @@
 // Loads game data from data/*.json. Call await loadData() once at startup.
-// All other modules import from this file (named exports populated at load time).
 
 export let TYPES = [];
 export let TYPE_CHART = {};
@@ -15,6 +14,7 @@ export const GLOBALS = { growthThresholds: [] };
 export const PASSIVE_SCHEMA = { triggers: {}, conditions: {}, effects: {} };
 export const GLYPHS = {};
 export let RELICS = {};
+export let ARCHETYPES = {};
 export const VOICE = {
   subtitles: {},
   notes: {},
@@ -34,7 +34,7 @@ async function fetchJson(path) {
 }
 
 export async function loadData() {
-  const [types, passives, abilities, statuses, addEffects, templates, globals, passiveSchema, glyphs, voice, relics] = await Promise.all([
+  const [types, passives, abilities, statuses, addEffects, templates, globals, passiveSchema, glyphs, voice, relics, archetypes] = await Promise.all([
     fetchJson('data/types.json'),
     fetchJson('data/passives.json'),
     fetchJson('data/abilities.json'),
@@ -46,14 +46,18 @@ export async function loadData() {
     fetchJson('data/glyphs.json'),
     fetchJson('data/voiceprose.json'),
     fetchJson('data/relics.json'),
+    fetchJson('data/archetypes.json'),
   ]);
   TYPES = types.TYPES;
   Object.assign(TYPE_CHART, types.TYPE_CHART);
   Object.assign(TYPE_PALETTE, types.TYPE_PALETTE);
   Object.assign(TYPE_LABELS, types.TYPE_LABELS || {});
-  Object.assign(PASSIVES, passives);
-  Object.assign(ABILITIES, abilities);
-  for (const [k, a] of Object.entries(ABILITIES)) a._key = k;
+  // Filter out _format/_doc keys from passives + abilities + relics + archetypes
+  for (const [k, v] of Object.entries(passives)) if (!k.startsWith('_')) PASSIVES[k] = v;
+  for (const [k, v] of Object.entries(abilities)) if (!k.startsWith('_')) {
+    ABILITIES[k] = v;
+    v._key = k;
+  }
   Object.assign(STATUSES, statuses);
   Object.assign(ADDITIONAL_EFFECTS, addEffects);
   TEMPLATES.length = 0;
@@ -71,6 +75,10 @@ export async function loadData() {
   for (const [k, v] of Object.entries(relics)) {
     if (k.startsWith('_')) continue;
     RELICS[k] = { id: k, ...v };
+  }
+  for (const [k, v] of Object.entries(archetypes)) {
+    if (k.startsWith('_')) continue;
+    ARCHETYPES[k] = { id: k, ...v };
   }
   Object.assign(VOICE.subtitles,      voice.subtitles      || {});
   Object.assign(VOICE.notes,          voice.notes          || {});

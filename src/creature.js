@@ -1,37 +1,51 @@
 import { rand, pickN } from './rng.js';
-import { TYPE_PALETTE, TEMPLATES, GLOBALS, VOICE } from './data.js';
+import { TYPE_PALETTE, TEMPLATES, GLOBALS, VOICE, ARCHETYPES } from './data.js';
 import { MAX_LEVEL, nextCreatureId, state, DEFAULT_ENERGY } from './state.js';
+
+// Universal abilities available to every creature regardless of archetype.
+const UNIVERSAL_POOL = ['strike', 'focus', 'step_back'];
+
+// Roll an ability loadout for a creature of the given archetype.
+// Pulls 4 abilities total: 2 from the archetype's pool + 1 universal + 1 more random
+// from archetype pool. This ensures every creature has at least 1 universal slot
+// and 3 archetype-specific abilities (where their identity comes from).
+function rollAbilities(template, archetypeKey) {
+  const arche = ARCHETYPES[archetypeKey];
+  const archePool = (arche && arche.abilityPool) || [];
+  const chosen = [];
+  const archeShuffled = pickN(archePool, archePool.length);
+  // Always include the archetype's signature-defining first ability if present
+  // (e.g. swing for striker, stoic for warden) so the player gets the mechanic
+  // builder.
+  if (archePool.length) {
+    chosen.push(archePool[0]);
+  }
+  // Add 2 more archetype-distinct abilities
+  for (const k of archeShuffled) {
+    if (chosen.length >= 3) break;
+    if (!chosen.includes(k)) chosen.push(k);
+  }
+  // Add 1 universal
+  const universal = pickN(UNIVERSAL_POOL.filter(k => !chosen.includes(k)), 1);
+  for (const k of universal) chosen.push(k);
+  return chosen.slice(0, 4);
+}
 
 export function makeCreature(template, level = 1, options = {}) {
   const stats = { ...template.baseStats };
   for (let l = 2; l <= level; l++) {
-    stats.hp  += Math.max(2, Math.round(template.growth.hp  * 4 + rand(-0.5, 1)));
-    stats.atk += Math.max(1, Math.round(template.growth.atk * 1.8 + rand(-0.3, 0.8)));
-    stats.def += Math.max(0, Math.round(template.growth.def * 1.6 + rand(-0.3, 0.8)));
-    stats.spd += Math.max(0, Math.round(template.growth.spd * 1.6 + rand(-0.3, 0.8)));
+    stats.hp  += Math.max(2, Math.round(template.growth.hp  * 4 + rand(-0.4, 0.8)));
+    stats.atk += Math.max(1, Math.round(template.growth.atk * 1.6 + rand(-0.2, 0.6)));
+    stats.def += Math.max(0, Math.round(template.growth.def * 1.4 + rand(-0.2, 0.6)));
+    stats.spd += Math.max(0, Math.round(template.growth.spd * 1.4 + rand(-0.2, 0.6)));
   }
-  stats.hp  = Math.max(8, stats.hp);
-  stats.atk = Math.max(2, stats.atk);
-  stats.def = Math.max(1, stats.def);
-  stats.spd = Math.max(1, stats.spd);
+  stats.hp  = Math.max(10, stats.hp);
+  stats.atk = Math.max(3, stats.atk);
+  stats.def = Math.max(2, stats.def);
+  stats.spd = Math.max(2, stats.spd);
 
-  // The species "pool" contains shared abilities + signature abilities.
-  // Signature abilities (template.signatureAbilities) are guaranteed to roll
-  // into the creature's loadout if present; the rest of the slots fill from
-  // the shared pool.
-  let abilities;
-  if (options.abilities) {
-    abilities = options.abilities;
-  } else {
-    const sigs = template.signatureAbilities || [];
-    const shared = (template.abilityPool || []).filter(k => !sigs.includes(k));
-    abilities = [...sigs];
-    while (abilities.length < 4 && shared.length) {
-      const i = Math.floor(Math.random() * shared.length);
-      abilities.push(shared.splice(i, 1)[0]);
-    }
-    abilities = abilities.slice(0, 4);
-  }
+  const archetype = options.archetype || template.archetype || 'striker';
+  const abilities = options.abilities || rollAbilities(template, archetype);
 
   let passives;
   if (options.passives) {
@@ -48,6 +62,7 @@ export function makeCreature(template, level = 1, options = {}) {
     id: nextCreatureId(),
     species: template.species,
     type: options.type || template.type,
+    archetype,
     growth,
     level,
     xp: 0,
@@ -57,9 +72,6 @@ export function makeCreature(template, level = 1, options = {}) {
     passives,
     palette,
     customName: options.customName || null,
-    // Signature mechanic (set by template). The species-specific stack tracker
-    // resets at battle start. See data/templates.json — `signature: { key, label, max, gainPerTurn? }`.
-    signature: template.signature || null,
   };
 }
 
@@ -72,10 +84,10 @@ export function gainXp(creature, amount) {
   while (creature.xp >= xpToNext(creature.level) && creature.level < MAX_LEVEL) {
     creature.xp -= xpToNext(creature.level);
     creature.level++;
-    const dHp  = Math.max(2, Math.round(creature.growth.hp  * 4 + rand(-0.3, 1.2)));
-    const dAtk = Math.max(1, Math.round(creature.growth.atk * 1.8 + rand(-0.2, 1.0)));
-    const dDef = Math.max(0, Math.round(creature.growth.def * 1.6 + rand(-0.2, 1.0)));
-    const dSpd = Math.max(0, Math.round(creature.growth.spd * 1.6 + rand(-0.2, 1.0)));
+    const dHp  = Math.max(2, Math.round(creature.growth.hp  * 4 + rand(-0.3, 1.0)));
+    const dAtk = Math.max(1, Math.round(creature.growth.atk * 1.6 + rand(-0.2, 0.8)));
+    const dDef = Math.max(0, Math.round(creature.growth.def * 1.4 + rand(-0.2, 0.8)));
+    const dSpd = Math.max(0, Math.round(creature.growth.spd * 1.4 + rand(-0.2, 0.8)));
     creature.stats.hp += dHp;
     creature.stats.atk += dAtk;
     creature.stats.def += dDef;
@@ -105,6 +117,8 @@ export function displayName(c) {
   return (t && t.name) || c.species;
 }
 
+export function archetypeOf(c) { return c && c.archetype ? ARCHETYPES[c.archetype] : null; }
+
 export function getDossierNotes(c) {
   const base = (VOICE.notes[c.species] || VOICE.notes[c.type] || ['—', '—', '—']).slice();
   const appends = VOICE.noteAppends && VOICE.noteAppends[c.species];
@@ -116,7 +130,8 @@ export function getDossierNotes(c) {
   return base;
 }
 
-// In-battle wrapper around a creature. Adds the energy + signature mechanic.
+// In-battle fighter. Now carries a multi-stack object — a hybrid creature
+// (bred between archetypes) can hold all four mechanic stacks at once.
 export function freshFighter(c) {
   return {
     creature: c,
@@ -124,23 +139,33 @@ export function freshFighter(c) {
     statMods: { atk: 0, def: 0, spd: 0 },
     bracingThisTurn: false,
     healing: null,
-    statuses: {
-      burn: null,
-      bloom: null,
-      soaking: null,
-      cursed: null,
-      dazed: null,
-    },
+    statuses: { burn: null, bloom: null, soaking: null, cursed: null, dazed: null },
     queuedAbility: null,
     pendingSwapBuff: null,
     pendingSwapHeal: 0,
     onBench: false,
     attacksMade: 0,
-    actionsThisTurn: 0,        // resets each round; drives combo bonus
-    energy: DEFAULT_ENERGY,    // current energy this round
-    maxEnergy: DEFAULT_ENERGY, // base energy per round (some passives may modify)
-    sigStacks: 0,              // signature mechanic stack count
+    actionsThisTurn: 0,
+    energy: DEFAULT_ENERGY,
+    maxEnergy: DEFAULT_ENERGY,
+    // Multi-stack signature mechanics. Each archetype owns one key.
+    // A hybrid creature can carry stacks across multiple keys simultaneously.
+    stacks: { momentum: 0, guard: 0, threads: 0, tend: 0 },
     consumedTriggers: new Set(),
     timedBuffs: [],
   };
+}
+
+// Helper: figure out which stack categories this creature CAN build/use,
+// based on the tags of their abilities. The UI uses this to decide which
+// stack rows to display per fighter.
+export function activeStackKeys(c) {
+  if (!c || !c.abilities) return [];
+  const keys = new Set();
+  // Always include the creature's own archetype stack
+  const arche = c.archetype && ARCHETYPES[c.archetype];
+  if (arche && arche.stack) keys.add(arche.stack.key);
+  // Plus any stack key referenced by their abilities (for hybrids)
+  // This requires looking at ABILITIES (avoiding circular import — done lazily)
+  return Array.from(keys);
 }
