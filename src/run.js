@@ -76,7 +76,7 @@ function tierBandForWave(wave) {
   if (wave <= 6) return [2, 3];
   if (wave <= 8) return [3];
   if (wave === 9) return [3, 4];
-  return [0];
+  return [4];
 }
 
 function makeHallway(patientTemplate) {

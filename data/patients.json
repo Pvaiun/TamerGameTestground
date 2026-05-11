@@ -2,14 +2,14 @@
   {
     "species": "Lumenpup",
     "category": "stranger",
-    "tier": 0,
+    "tier": 4,
     "name": "[Patient 0413]",
-    "intents": ["drift", "go_still", "watch_the_corner", "mutter", "refuse_the_room"],
+    "intents": ["drift", "speak_as_other", "use_your_name", "tell_a_name", "answer_in_yours", "refuse_the_room", "go_still"],
     "fragments": [
       "Arrived at the front entrance unaccompanied. No identification provided.",
       "Vitals normal. Responds to questions. !!Does not remember the address.!!",
       "Settled in room without resistance.",
-      "Has begun to read other patients' files."
+      "Has been observed reading other patients' files. ~~Staff have not interrupted.~~ Staff have not been able to."
     ],
     "subtitle": "Admitted [[8]] · file open"
   },

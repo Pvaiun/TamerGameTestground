@@ -59,7 +59,9 @@ export function renderIntakeResult() {
 
 function docPage(tag) {
   const wrap = el('div', { class: 'doc-page' });
-  wrap.appendChild(el('div', { class: 'doc-page-tag' }, tag));
+  const tagEl = el('div', { class: 'doc-page-tag' });
+  tagEl.innerHTML = parseProse(tag);
+  wrap.appendChild(tagEl);
   return wrap;
 }
 function docButton(label, onclick) {
