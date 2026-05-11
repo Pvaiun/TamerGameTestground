@@ -1,44 +1,37 @@
 {
+  "_format": "Simplified to 3 statuses. Burn = DoT, Brittle = +incoming dmg, Drained = -atk/spd, Stun = skip next ability (chance). Each has a clear role with no overlap.",
+
   "burn": {
     "name": "Fevering",
-    "desc": "Loses 8% max hp per turn.",
+    "desc": "Loses 8% max hp per round for 2 rounds.",
     "tickKind": "damage",
-    "turns": 3,
+    "turns": 2,
     "percentPerTurn": 0.08,
     "stacking": "refresh"
   },
-  "bloom": {
-    "name": "Mending",
-    "desc": "Restores 8% max hp per turn.",
-    "tickKind": "heal",
-    "turns": 3,
-    "percentPerTurn": 0.08,
-    "stacking": "refresh"
-  },
-  "soaking": {
-    "name": "Drained",
-    "desc": "Attack and speed reduced by 30%.",
+  "brittle": {
+    "name": "Brittle",
+    "desc": "Takes +30% damage from all sources for 2 rounds.",
     "tickKind": "none",
-    "turns": 3,
+    "turns": 2,
+    "vulnerability": 0.30,
+    "stacking": "refresh"
+  },
+  "drained": {
+    "name": "Drained",
+    "desc": "Attack and speed reduced 30% for 2 rounds.",
+    "tickKind": "none",
+    "turns": 2,
     "atkMult": 0.7,
     "spdMult": 0.7,
     "stacking": "refresh"
   },
-  "cursed": {
-    "name": "Broken",
-    "desc": "Takes 25% extra damage from all sources. Loses 25% hp on swap-out.",
+  "stun": {
+    "name": "Stunned",
+    "desc": "50% chance to skip next ability. Consumed on skip or after 1 round.",
     "tickKind": "none",
-    "turns": 3,
-    "percentOnSwap": 0.25,
-    "vulnerability": 0.25,
-    "stacking": "refresh"
-  },
-  "dazed": {
-    "name": "Sedated",
-    "desc": "35% chance to skip turn.",
-    "tickKind": "none",
-    "turns": 2,
-    "skipChance": 0.35,
+    "turns": 1,
+    "skipChance": 0.5,
     "stacking": "refresh"
   }
 }

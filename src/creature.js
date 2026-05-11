@@ -1,46 +1,30 @@
-import { rand, pickN } from './rng.js';
+import { rand } from './rng.js';
 import { TYPE_PALETTE, TEMPLATES, GLOBALS, VOICE } from './data.js';
 import { MAX_LEVEL, nextCreatureId, state, DEFAULT_ENERGY } from './state.js';
 
 export function makeCreature(template, level = 1, options = {}) {
   const stats = { ...template.baseStats };
   for (let l = 2; l <= level; l++) {
-    stats.hp  += Math.max(2, Math.round(template.growth.hp  * 4 + rand(-0.5, 1)));
-    stats.atk += Math.max(1, Math.round(template.growth.atk * 1.8 + rand(-0.3, 0.8)));
-    stats.def += Math.max(0, Math.round(template.growth.def * 1.6 + rand(-0.3, 0.8)));
-    stats.spd += Math.max(0, Math.round(template.growth.spd * 1.6 + rand(-0.3, 0.8)));
+    stats.hp  += Math.max(3, Math.round(template.growth.hp  * 4 + rand(-0.5, 1)));
+    stats.atk += Math.max(1, Math.round(template.growth.atk * 2.0 + rand(-0.3, 0.8)));
+    stats.def += Math.max(1, Math.round(template.growth.def * 1.6 + rand(-0.3, 0.8)));
+    stats.spd += Math.max(1, Math.round(template.growth.spd * 1.4 + rand(-0.3, 0.8)));
   }
-  stats.hp  = Math.max(8, stats.hp);
-  stats.atk = Math.max(2, stats.atk);
-  stats.def = Math.max(1, stats.def);
-  stats.spd = Math.max(1, stats.spd);
+  stats.hp  = Math.max(10, stats.hp);
+  stats.atk = Math.max(3,  stats.atk);
+  stats.def = Math.max(2,  stats.def);
+  stats.spd = Math.max(2,  stats.spd);
 
-  // The species "pool" contains shared abilities + signature abilities.
-  // Signature abilities (template.signatureAbilities) are guaranteed to roll
-  // into the creature's loadout if present; the rest of the slots fill from
-  // the shared pool.
-  let abilities;
-  if (options.abilities) {
-    abilities = options.abilities;
-  } else {
-    const sigs = template.signatureAbilities || [];
-    const shared = (template.abilityPool || []).filter(k => !sigs.includes(k));
-    abilities = [...sigs];
-    while (abilities.length < 4 && shared.length) {
-      const i = Math.floor(Math.random() * shared.length);
-      abilities.push(shared.splice(i, 1)[0]);
-    }
-    abilities = abilities.slice(0, 4);
-  }
+  // 4 abilities per creature — fixed list per species, no random rolls.
+  // Breeding can substitute abilities.
+  const abilities = options.abilities || [...template.abilityPool].slice(0, 4);
 
+  // 1 passive per creature. 70% primary, 30% secondary. Breeding can mix.
   let passives;
-  if (options.passives) {
-    passives = options.passives;
-  } else {
-    const rolledPassive = Math.random() < 0.30
-      ? template.secondaryPassive
-      : template.primaryPassive;
-    passives = [rolledPassive];
+  if (options.passives) passives = options.passives;
+  else {
+    const rolled = Math.random() < 0.30 ? template.secondaryPassive : template.primaryPassive;
+    passives = [rolled].filter(Boolean);
   }
   const palette = options.palette || TYPE_PALETTE[template.type];
   const growth = options.growth || template.growth;
@@ -57,13 +41,10 @@ export function makeCreature(template, level = 1, options = {}) {
     passives,
     palette,
     customName: options.customName || null,
-    // Signature mechanic (set by template). The species-specific stack tracker
-    // resets at battle start. See data/templates.json — `signature: { key, label, max, gainPerTurn? }`.
-    signature: template.signature || null,
   };
 }
 
-export function xpToNext(level) { return 14 + level * 9; }
+export function xpToNext(level) { return 12 + level * 7; }
 
 export function gainXp(creature, amount) {
   const events = [];
@@ -72,10 +53,10 @@ export function gainXp(creature, amount) {
   while (creature.xp >= xpToNext(creature.level) && creature.level < MAX_LEVEL) {
     creature.xp -= xpToNext(creature.level);
     creature.level++;
-    const dHp  = Math.max(2, Math.round(creature.growth.hp  * 4 + rand(-0.3, 1.2)));
-    const dAtk = Math.max(1, Math.round(creature.growth.atk * 1.8 + rand(-0.2, 1.0)));
-    const dDef = Math.max(0, Math.round(creature.growth.def * 1.6 + rand(-0.2, 1.0)));
-    const dSpd = Math.max(0, Math.round(creature.growth.spd * 1.6 + rand(-0.2, 1.0)));
+    const dHp  = Math.max(3, Math.round(creature.growth.hp  * 4 + rand(-0.3, 1.2)));
+    const dAtk = Math.max(1, Math.round(creature.growth.atk * 2.0 + rand(-0.2, 1.0)));
+    const dDef = Math.max(1, Math.round(creature.growth.def * 1.6 + rand(-0.2, 1.0)));
+    const dSpd = Math.max(1, Math.round(creature.growth.spd * 1.4 + rand(-0.2, 1.0)));
     creature.stats.hp += dHp;
     creature.stats.atk += dAtk;
     creature.stats.def += dDef;
@@ -116,30 +97,20 @@ export function getDossierNotes(c) {
   return base;
 }
 
-// In-battle wrapper around a creature. Adds the energy + signature mechanic.
+// In-battle wrapper around a creature. Adds energy + universal Charge.
 export function freshFighter(c) {
   return {
     creature: c,
     hp: c.maxHp,
     statMods: { atk: 0, def: 0, spd: 0 },
     bracingThisTurn: false,
-    healing: null,
-    statuses: {
-      burn: null,
-      bloom: null,
-      soaking: null,
-      cursed: null,
-      dazed: null,
-    },
-    queuedAbility: null,
-    pendingSwapBuff: null,
-    pendingSwapHeal: 0,
+    statuses: { burn: null, brittle: null, drained: null, stun: null },
     onBench: false,
     attacksMade: 0,
-    actionsThisTurn: 0,        // resets each round; drives combo bonus
-    energy: DEFAULT_ENERGY,    // current energy this round
-    maxEnergy: DEFAULT_ENERGY, // base energy per round (some passives may modify)
-    sigStacks: 0,              // signature mechanic stack count
+    actionsThisTurn: 0,
+    energy: DEFAULT_ENERGY,
+    maxEnergy: DEFAULT_ENERGY,
+    charge: 0,                     // universal 0-3 resource
     consumedTriggers: new Set(),
     timedBuffs: [],
   };

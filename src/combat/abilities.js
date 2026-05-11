@@ -1,10 +1,13 @@
-import { STATUSES, ADDITIONAL_EFFECTS } from '../data.js';
-import { state, pushGame, pushLore } from '../state.js';
+// Ability effect dispatcher. Each phase of an ability is a list of effect
+// objects. Damage effects run during the damage phase; other effects run
+// either 'before', 'after', or 'eachHit'.
+
+import { ADDITIONAL_EFFECTS } from '../data.js';
+import { state, pushGame } from '../state.js';
 import { displayName } from '../creature.js';
-import { hasPassive, applyPostHitPassives, applySelfDmgMult } from './passives.js';
+import { applyPostHitPassives } from './passives.js';
 import { applyStatus, cleanseStatuses, applyHeal } from './status.js';
 import { spawnFloat } from '../ui/animations.js';
-import { drainBeats } from './log.js';
 
 const lower = (s) => String(s || '');
 const cap = (s) => String(s || '').replace(/^./, c => c.toUpperCase());
@@ -32,54 +35,21 @@ function effectTiming(eff) {
     case 'swap': return 'after';
     case 'cleanse': return 'after';
     case 'lifesteal': return 'eachHit';
-    case 'hp_cost': return 'before';
-    case 'sig_gain_light':
-    case 'sig_gain_heat':
-    case 'sig_gain_roots':
-    case 'sig_gain_frost':
-    case 'sig_gain_embers':
-    case 'sig_gain_hollow': return 'after';
-    case 'sig_gain_marks': return 'eachHit';
-    case 'sig_consume_hollow_curse': return 'after';
-    case 'sig_consume_embers_aoe': return 'after';
-    case 'sig_consume_frost_shatter': return 'after';
-    // sig_consume_*_dmg run BOTH at damage calc time AND in the handler
-    // (which zeros stacks). The timed handler runs at 'after'.
-    case 'sig_consume_light_dmg':
-    case 'sig_consume_heat_dmg':
-    case 'sig_consume_roots_dmg':
-    case 'sig_consume_marks_dmg':
-    case 'sig_consume_tide_dmg': return 'after';
+    case 'gain_charge': return 'after';
+    case 'spend_charge': return 'after';   // damage uses it during calc; we zero stacks here
   }
   return null;
 }
 
-// True for effects that ONLY modify damage during calc (and have no other
-// runtime side-effect via the timed handler). These are skipped by the
-// dispatcher entirely.
 function isPureDamageMod(eff) {
   if (!eff || !eff.type) return false;
-  if (eff.type === 'pierce' || eff.type === 'execute_scale' || eff.type === 'status_synergy') return true;
+  if (eff.type === 'pierce' || eff.type === 'execute_scale') return true;
   return false;
-}
-
-export function applyCursedOnSwap(f, side) {
-  if (!f || !f.statuses || !f.statuses.cursed) return 0;
-  let dmg = Math.max(1, Math.round(f.creature.maxHp * f.statuses.cursed.percentOnSwap));
-  if (state.relics && state.relics.length) {
-    for (const r of state.relics) if (r.reduceCursedSwap) dmg = Math.max(1, Math.round(dmg * (1 - r.reduceCursedSwap)));
-  }
-  f.hp = Math.max(0, f.hp - dmg);
-  pushGame(`${cap(lower(displayName(f.creature)))} · Broken takes -${dmg} on swap.`, {
-    cls: 'eff', damage: dmg,
-    anim: () => spawnFloat(side, String(dmg), 'crit'),
-  });
-  return dmg;
 }
 
 export function processPostHit(side, oside, attacker, defender, ability, result) {
   applyPostHitPassives(side, oside, attacker, defender, result, {
-    applyHeal, applyStatus, spawnFloat, pushGame, pushLore, displayName,
+    applyHeal, applyStatus, spawnFloat, pushGame, displayName,
   });
 }
 
@@ -102,22 +72,28 @@ export function resolveTargets(targetKey, side, attacker, defender) {
 async function handleEffect(eff, ctx) {
   const { side, oside, attacker, defender, lastDmg, helpers } = ctx;
   switch (eff.type) {
+
     case 'apply_status': {
       const status   = effParam(eff, 'status');
       const targets  = effParam(eff, 'targets') || ['enemy'];
       const turnsOv  = effParam(eff, 'turnsOverride');
-      const opts     = {};
+      const chance   = eff.chance ?? 1;
+      if (chance < 1 && Math.random() >= chance) {
+        pushGame(`${cap(lower(displayName(attacker.creature)))} · ${prettyStatus(status)} missed.`, { cls: 'fade' });
+        return;
+      }
+      const opts = {};
       if (turnsOv && turnsOv > 0) opts.turns = turnsOv;
       const fighters = targets.flatMap(tk => resolveTargets(tk, side, attacker, defender));
       const applied = [];
       for (const f of fighters) if (applyStatus(f, status, opts)) applied.push(f);
       if (applied.length) {
         const target = applied[0];
-        const sName = ({ burn: 'Fevering', bloom: 'Mending', soaking: 'Drained', cursed: 'Broken', dazed: 'Sedated' })[status] || status;
-        pushGame(`${cap(lower(displayName(target.creature)))} · ${sName}.`, { cls: 'eff', icon: status });
+        pushGame(`${cap(lower(displayName(target.creature)))} · ${prettyStatus(status)}.`, { cls: 'eff', icon: status });
       }
       return;
     }
+
     case 'buff': {
       const targets = effParam(eff, 'targets') || ['self'];
       const sm = eff.statMult || {};
@@ -140,18 +116,7 @@ async function handleEffect(eff, ctx) {
       }
       return;
     }
-    case 'heal_over_time': {
-      const percent = effParam(eff, 'percent');
-      const turns   = effParam(eff, 'turns');
-      const targets = effParam(eff, 'targets') || ['self'];
-      const fighters = targets.flatMap(tk => resolveTargets(tk, side, attacker, defender));
-      for (const f of fighters) {
-        const perTurn = Math.max(1, Math.round(f.creature.maxHp * percent));
-        f.healing = { perTurn, turnsLeft: turns };
-        pushGame(`${cap(lower(displayName(f.creature)))} · regen ${perTurn}/r for ${turns}r.`, { cls: 'eff' });
-      }
-      return;
-    }
+
     case 'heal_self_pct': {
       const pct = effParam(eff, 'percent') || 0.2;
       const amt = Math.round(attacker.creature.maxHp * pct);
@@ -164,33 +129,30 @@ async function handleEffect(eff, ctx) {
       }
       return;
     }
+
     case 'bracing': {
       const targets = effParam(eff, 'targets') || ['self'];
       const fighters = targets.flatMap(tk => resolveTargets(tk, side, attacker, defender));
       for (const f of fighters) f.bracingThisTurn = true;
       if (fighters.length) {
-        pushGame(`${cap(lower(displayName(fighters[0].creature)))} · braces (-60% next hit).`, { cls: 'eff' });
+        pushGame(`${cap(lower(displayName(fighters[0].creature)))} · braces (−50% next hit).`, { cls: 'eff' });
       }
       return;
     }
+
     case 'cleanse': {
-      const targets    = effParam(eff, 'targets') || ['self'];
-      const doStatuses = effParam(eff, 'cleanseStatuses') ?? true;
-      const doBuffs    = effParam(eff, 'cleanseBuffs') ?? false;
-      const doDebuffs  = effParam(eff, 'cleanseDebuffs') ?? true;
+      const targets = effParam(eff, 'targets') || ['self'];
       const fighters = targets.flatMap(tk => resolveTargets(tk, side, attacker, defender));
       for (const f of fighters) {
-        if (doStatuses) cleanseStatuses(f);
-        if (doBuffs || doDebuffs) {
-          for (const k of ['atk', 'def', 'spd']) {
-            if (doBuffs   && f.statMods[k] > 0) f.statMods[k] = 0;
-            if (doDebuffs && f.statMods[k] < 0) f.statMods[k] = 0;
-          }
+        cleanseStatuses(f);
+        for (const k of ['atk', 'def', 'spd']) {
+          if (f.statMods[k] < 0) f.statMods[k] = 0;
         }
         pushGame(`${cap(lower(displayName(f.creature)))} · cleansed.`, { cls: 'eff' });
       }
       return;
     }
+
     case 'lifesteal': {
       const pct = effParam(eff, 'percentOfDamage') || 0;
       const healed = applyHeal(attacker, Math.round((lastDmg || 0) * pct));
@@ -202,19 +164,7 @@ async function handleEffect(eff, ctx) {
       }
       return;
     }
-    case 'hp_cost': {
-      const pct = effParam(eff, 'percent') || 0;
-      let cost = Math.round(attacker.creature.maxHp * pct);
-      cost = Math.max(0, Math.round(applySelfDmgMult(attacker, cost)));
-      attacker.hp = Math.max(1, attacker.hp - cost);
-      if (cost > 0) {
-        pushGame(`${cap(lower(displayName(attacker.creature)))} pays -${cost}.`, {
-          damage: cost, cls: 'eff',
-          anim: () => spawnFloat(side, String(cost), 'dmg'),
-        });
-      }
-      return;
-    }
+
     case 'swap': {
       const targets = effParam(eff, 'targets') || ['self'];
       if (targets.includes('self') && attacker.hp > 0) {
@@ -223,87 +173,37 @@ async function handleEffect(eff, ctx) {
       return;
     }
 
-    // ── signature mechanics ──────────────────────────────────────────
-    case 'sig_gain_light':
-    case 'sig_gain_heat':
-    case 'sig_gain_roots':
-    case 'sig_gain_frost':
-    case 'sig_gain_embers':
-    case 'sig_gain_hollow': {
+    case 'gain_charge': {
       const amount = eff.amount ?? 1;
-      const max = (attacker.creature.signature && attacker.creature.signature.max) || 5;
-      const before = attacker.sigStacks || 0;
-      attacker.sigStacks = Math.min(max, before + amount);
-      const gained = attacker.sigStacks - before;
+      const before = attacker.charge || 0;
+      attacker.charge = Math.min(3, before + amount);
+      const gained = attacker.charge - before;
       if (gained > 0) {
-        const label = (attacker.creature.signature && attacker.creature.signature.label) || 'Stacks';
-        pushGame(`${cap(lower(displayName(attacker.creature)))} · +${gained} ${label} (${attacker.sigStacks}/${max}).`, { cls: 'eff' });
+        pushGame(`${cap(lower(displayName(attacker.creature)))} · +${gained} Charge (${attacker.charge}/3).`, { cls: 'eff' });
       }
       return;
     }
-    case 'sig_gain_marks': {
-      // Marks attach to the TARGET (not the attacker).
-      if (!defender || defender.hp <= 0) return;
-      const amount = eff.amount ?? 1;
-      const max = 4;
-      defender.marks = Math.min(max, (defender.marks || 0) + amount);
-      pushGame(`${cap(lower(displayName(defender.creature)))} · +${amount} Mark (${defender.marks}/${max}).`, { cls: 'eff' });
-      return;
-    }
-    case 'sig_consume_hollow_curse': {
-      const stacks = attacker.sigStacks || 0;
-      if (stacks <= 0) {
-        pushGame('No Hollow to spend.', { cls: 'fade' });
-        return;
-      }
-      // Apply Broken with extended turns scaling
-      const turns = Math.max(2, 2 + stacks);
-      applyStatus(defender, 'cursed', { turns });
-      pushGame(`${cap(lower(displayName(defender.creature)))} · Broken (${turns}r).`, { cls: 'eff' });
-      attacker.sigStacks = 0;
-      return;
-    }
-    case 'sig_consume_embers_aoe': {
-      const stacks = attacker.sigStacks || 0;
-      if (stacks <= 0) return;
-      // Damage to enemy bench too (already hit active in damage phase)
-      const benchTarget = side === 'player' ? state.ebf : state.bf;
-      if (benchTarget && benchTarget.hp > 0) {
-        const flat = Math.max(1, Math.round(benchTarget.creature.maxHp * 0.10 * stacks));
-        benchTarget.hp = Math.max(0, benchTarget.hp - flat);
-        const targetSide = side === 'player' ? 'enemy' : 'player';
-        pushGame(`${cap(lower(displayName(benchTarget.creature)))} · burst -${flat}.`, {
-          cls: 'eff', damage: flat,
-          anim: () => spawnFloat(targetSide, String(flat), 'dmg'),
-        });
-      }
-      attacker.sigStacks = 0;
-      return;
-    }
-    case 'sig_consume_frost_shatter': {
-      const stacks = attacker.sigStacks || 0;
-      if (stacks >= 3 && defender && defender.hp > 0) {
-        applyStatus(defender, 'dazed', {});
-        pushGame(`${cap(lower(displayName(defender.creature)))} · Sedated.`, { cls: 'eff' });
-      }
-      attacker.sigStacks = 0;
-      return;
-    }
-    case 'sig_consume_light_dmg':
-    case 'sig_consume_heat_dmg':
-    case 'sig_consume_roots_dmg':
-    case 'sig_consume_marks_dmg':
-    case 'sig_consume_tide_dmg': {
-      // These are damage modifiers consumed in damage.js. We just zero out stacks here (after damage already calculated).
-      // For Marks (which lives on defender), zero out defender's marks instead of attacker's.
-      if (eff.type === 'sig_consume_marks_dmg') {
-        if (defender) defender.marks = 0;
-      } else if (eff.type !== 'sig_consume_tide_dmg') {
-        attacker.sigStacks = 0;
+
+    case 'spend_charge': {
+      // Damage was already calculated using charge at calc time.
+      // We just need to zero out stacks now.
+      if ((attacker.charge || 0) > 0) {
+        pushGame(`${cap(lower(displayName(attacker.creature)))} · spent ${attacker.charge} Charge.`, { cls: 'fade' });
+        attacker.charge = 0;
       }
       return;
     }
   }
+}
+
+export function applyCursedOnSwap(_f, _side) {
+  // Legacy: cursed-on-swap was removed. Status 'cursed' no longer exists in
+  // the simplified status set.
+  return 0;
+}
+
+function prettyStatus(k) {
+  return ({ burn: 'Fevering', brittle: 'Brittle', drained: 'Drained', stun: 'Stunned' })[k] || k;
 }
 
 export async function runTimedEffects(timing, phase, ctx) {

@@ -1,9 +1,4 @@
-// Doc-card: a single creature rendered as a paragraph in the dossier
-// document. Replaces the old procedural-art creature card. Used on every
-// non-battle screen for selection and review.
-//
-// Inspect modal and ability tooltip are also rendered in the document
-// aesthetic — same typography, same spacing rules.
+// Doc-card: a single creature rendered as a paragraph in the dossier document.
 
 import { el, attachLongPress } from './dom.js';
 import { PASSIVES, ABILITIES, VOICE, TYPE_LABELS } from '../data.js';
@@ -28,23 +23,34 @@ export function creatureCardEl(c, options = {}) {
   if (!options.noInspect)  cls += ' inspectable';
   const card = el('div', { class: cls });
 
+  // Selection click goes on the card; inspection has its own affordance (info button + right-click).
+  if (isSelectable && options.onclick) {
+    card.addEventListener('click', (e) => {
+      // Don't fire if click was on inspect button.
+      if (e.target.closest && e.target.closest('.doc-card-inspect')) return;
+      options.onclick(e);
+    });
+  }
   if (!options.noInspect) {
-    attachLongPress(card,
-      () => openInspectModal(c),
-      isSelectable && options.onclick ? options.onclick : null);
-  } else if (isSelectable && options.onclick) {
-    card.addEventListener('click', options.onclick);
+    attachLongPress(card, () => openInspectModal(c), null);
   }
 
   card.appendChild(el('span', { class: 'doc-card-marker' }, '▸ '));
   card.appendChild(portraitEl(c));
 
   const body = el('div', { class: 'doc-card-body' });
-
   const head = el('div', { class: 'doc-card-head' });
   head.appendChild(el('span', { class: 'doc-card-name', html: parseProse(displayName(c)) }));
   head.appendChild(el('span', { class: 'doc-card-meta' },
     `${typeLabel(c.type)} · l${c.level} · #${pad4(c.id)}`));
+
+  if (!options.noInspect) {
+    const insp = el('button', {
+      class: 'doc-button small doc-card-inspect',
+      onclick: (e) => { e.stopPropagation(); openInspectModal(c); },
+    }, '▸ inspect');
+    head.appendChild(insp);
+  }
   body.appendChild(head);
 
   const subtitle = VOICE.subtitles[c.species] || VOICE.subtitles[c.type];
@@ -79,16 +85,28 @@ export function creatureCardEl(c, options = {}) {
       const p = PASSIVES[k];
       const voice = VOICE.passives[k];
       const mech = (p && p.desc) ? p.desc : '';
-      const prose = voice || mech || '—';
+      const prose = mech || voice || '—';
       const row = el('div', { class: 'doc-card-passive' });
-      row.appendChild(el('span', { class: 'passive-bullet' }, '• '));
-      row.appendChild(el('span', { class: 'passive-name-doc' }, p ? p.name : k));
+      row.appendChild(el('span', { class: 'passive-bullet' }, '•'));
+      row.appendChild(el('span', { class: 'passive-name-doc' }, ` ${p ? p.name : k}`));
       row.appendChild(el('span', { class: 'passive-sep' }, ' · '));
       const desc = el('span', { class: 'passive-desc-doc' });
       desc.innerHTML = parseProse(prose);
       row.appendChild(desc);
       body.appendChild(row);
     }
+  }
+
+  // Ability pills (compact)
+  if (c.abilities && c.abilities.length) {
+    const ab = el('div', { class: 'doc-card-abilities' });
+    for (const k of c.abilities) {
+      const a = ABILITIES[k];
+      if (!a) continue;
+      const cls = 'doc-card-ability' + (a.element ? ' elem-' + a.element : '');
+      ab.appendChild(el('span', { class: cls, title: a.effect || '' }, a.name));
+    }
+    body.appendChild(ab);
   }
 
   card.appendChild(body);
@@ -121,10 +139,9 @@ export function openInspectModal(c) {
   head.appendChild(headInfo);
   m.appendChild(head);
 
-  // field notes (voice prose, with wave-fill for the protagonist)
   const noteLines = getDossierNotes(c);
   if (noteLines && noteLines.length) {
-    m.appendChild(el('div', { class: 'sec-label-doc' }, '─ Patient file ─'));
+    m.appendChild(el('div', { class: 'sec-label-doc' }, '─ patient file ─'));
     const prose = el('div', { class: 'doc-modal-notes' });
     for (const line of noteLines) {
       const lineEl = el('div', { class: 'fn-line' });
@@ -134,10 +151,14 @@ export function openInspectModal(c) {
     m.appendChild(prose);
   }
 
-  // capability with growths
   m.appendChild(el('div', { class: 'sec-label-doc' }, '─ capability ─'));
   const sg = el('div', { class: 'doc-modal-stats' });
-  for (const [label, val, growth] of [['hp', c.stats.hp, c.growth.hp], ['atk', c.stats.atk, c.growth.atk], ['def', c.stats.def, c.growth.def], ['spd', c.stats.spd, c.growth.spd]]) {
+  for (const [label, val, growth] of [
+    ['hp', c.stats.hp, c.growth.hp],
+    ['atk', c.stats.atk, c.growth.atk],
+    ['def', c.stats.def, c.growth.def],
+    ['spd', c.stats.spd, c.growth.spd],
+  ]) {
     const rank = growthRank(growth);
     const row = el('div', { class: 'doc-modal-stat-row' });
     row.appendChild(el('span', { class: 'stat-mini-label' }, label));
@@ -150,7 +171,6 @@ export function openInspectModal(c) {
   }
   m.appendChild(sg);
 
-  // passives
   m.appendChild(el('div', { class: 'sec-label-doc' }, '─ passives ─'));
   if (c.passives && c.passives.length) {
     for (const k of c.passives) {
@@ -164,7 +184,7 @@ export function openInspectModal(c) {
       top.appendChild(el('span', { class: 'passive-name-doc' }, p ? p.name : k));
       top.appendChild(el('span', { class: 'passive-sep' }, ' · '));
       const desc = el('span', { class: 'passive-desc-doc' });
-      desc.innerHTML = parseProse(voice || mech || '—');
+      desc.innerHTML = parseProse(showMech ? voice : (mech || '—'));
       top.appendChild(desc);
       row.appendChild(top);
       if (showMech) row.appendChild(el('div', { class: 'passive-mech' }, mech));
@@ -174,7 +194,6 @@ export function openInspectModal(c) {
     m.appendChild(el('div', { class: 'doc-modal-row' }, '— none observed —'));
   }
 
-  // abilities
   m.appendChild(el('div', { class: 'sec-label-doc' }, '─ cataloged actions ─'));
   for (const k of c.abilities) {
     const a = ABILITIES[k];
@@ -188,11 +207,9 @@ export function openInspectModal(c) {
       if (a.element) tail.appendChild(el('span', { class: 'ability-elem' }, a.element));
       if (dmg) {
         if (a.element) tail.appendChild(el('span', {}, ' · '));
-        tail.appendChild(el('span', { class: 'pow-num' }, (dmg.hits || 1) > 1 ? `${dmg.power}×${dmg.hits}` : `${dmg.power}`));
+        tail.appendChild(el('span', { class: 'pow-num' }, (dmg.hits || 1) > 1 ? `pow ${dmg.power}×${dmg.hits}` : `pow ${dmg.power}`));
       }
-      if (a.phases && a.phases.length > 1) {
-        tail.appendChild(el('span', {}, ` · ${a.phases.length}p`));
-      }
+      tail.appendChild(el('span', {}, ` · ${a.cost ?? 2}E`));
       top.appendChild(tail);
     }
     row.appendChild(top);
@@ -229,9 +246,9 @@ export function openAbilityTooltip(abilityKey) {
 
   const flat = (a.phases || []).flat();
   const meta = el('div', { class: 'doc-modal-meta-grid' });
+  metaRow(meta, 'cost', `${a.cost ?? 2}E`);
   if (a.element) metaRow(meta, 'element', a.element);
-  if (a.priority) metaRow(meta, 'priority', (a.priority > 0 ? '+' : '') + a.priority);
-  if (a.phases && a.phases.length > 1) metaRow(meta, 'phases', String(a.phases.length));
+  if (a.tags && a.tags.length) metaRow(meta, 'tags', a.tags.join(', '));
   const dmg = flat.filter(e => e.type === 'damage');
   if (dmg.length === 1) {
     const d = dmg[0];
@@ -243,11 +260,12 @@ export function openAbilityTooltip(abilityKey) {
     if (eff.type === 'buff' && eff.statMult) {
       const parts = Object.entries(eff.statMult).filter(([, v]) => v).map(([k, v]) => `${k} ${v >= 0 ? '+' : ''}${Math.round(v * 100)}%`);
       if (parts.length) metaRow(meta, 'stat mod', parts.join(' '));
-    } else if (eff.type === 'heal_over_time') {
-      metaRow(meta, 'heal/turn', Math.round((eff.percent ?? 0.06) * 100) + '%');
-      metaRow(meta, 'duration', (eff.turns ?? 4) + ' turns');
-    } else if (eff.type === 'hp_cost') {
-      metaRow(meta, 'hp cost', Math.round((eff.percent ?? 0) * 100) + '%');
+    } else if (eff.type === 'heal_self_pct') {
+      metaRow(meta, 'heal', Math.round((eff.percent ?? 0.25) * 100) + '% max hp');
+    } else if (eff.type === 'gain_charge') {
+      metaRow(meta, 'charge', '+' + (eff.amount ?? 1));
+    } else if (eff.type === 'spend_charge') {
+      metaRow(meta, 'spend', `+${Math.round((eff.perStack ?? 0.5) * 100)}% per Charge`);
     }
   }
   m.appendChild(meta);

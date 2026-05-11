@@ -13,28 +13,24 @@ export function applyStatus(f, type, opts) {
   const def = STATUSES[type];
   if (!def) return false;
   const turns = opts.turns ?? def.turns;
-  if (type === 'burn' || type === 'bloom') {
-    f.statuses[type] = { turns, percentPerTurn: opts.pct ?? def.percentPerTurn };
+  if (type === 'burn') {
+    f.statuses.burn = { turns, percentPerTurn: opts.pct ?? def.percentPerTurn };
     return true;
   }
-  if (type === 'soaking') {
-    f.statuses.soaking = {
+  if (type === 'brittle') {
+    f.statuses.brittle = { turns, vulnerability: opts.vulnerability ?? def.vulnerability ?? 0.30 };
+    return true;
+  }
+  if (type === 'drained') {
+    f.statuses.drained = {
       turns,
       atkMult: opts.atkMult ?? def.atkMult ?? 0.7,
       spdMult: opts.spdMult ?? def.spdMult ?? 0.7,
     };
     return true;
   }
-  if (type === 'cursed') {
-    f.statuses.cursed = {
-      turns,
-      percentOnSwap: opts.pct ?? def.percentOnSwap,
-      vulnerability: opts.vulnerability ?? def.vulnerability ?? 0.25,
-    };
-    return true;
-  }
-  if (type === 'dazed') {
-    f.statuses.dazed = { turns, skipChance: opts.skipChance ?? def.skipChance ?? 0.35 };
+  if (type === 'stun') {
+    f.statuses.stun = { turns, skipChance: opts.skipChance ?? def.skipChance ?? 0.5 };
     return true;
   }
   return false;
@@ -42,10 +38,9 @@ export function applyStatus(f, type, opts) {
 
 export function cleanseStatuses(f) {
   f.statuses.burn = null;
-  f.statuses.bloom = null;
-  f.statuses.soaking = null;
-  f.statuses.cursed = null;
-  f.statuses.dazed = null;
+  f.statuses.brittle = null;
+  f.statuses.drained = null;
+  f.statuses.stun = null;
 }
 
 export async function tickFighterStatuses(f, side, isBench) {
@@ -54,7 +49,7 @@ export async function tickFighterStatuses(f, side, isBench) {
     const dmg = Math.max(1, Math.round(f.creature.maxHp * f.statuses.burn.percentPerTurn));
     f.hp = Math.max(0, f.hp - dmg);
     if (!isBench) {
-      pushGame(`${cap(displayName(f.creature))} · Fevering -${dmg}.`, {
+      pushGame(`${cap(displayName(f.creature))} · Fevering −${dmg}.`, {
         damage: dmg, cls: 'eff',
         anim: () => spawnFloat(side, String(dmg), 'dmg'),
       });
@@ -63,49 +58,23 @@ export async function tickFighterStatuses(f, side, isBench) {
     f.statuses.burn.turns--;
     if (f.statuses.burn.turns <= 0) f.statuses.burn = null;
   }
-  if (f.statuses.bloom && f.statuses.bloom.turns > 0) {
-    const healed = applyHeal(f, Math.max(1, Math.round(f.creature.maxHp * f.statuses.bloom.percentPerTurn)));
-    if (healed > 0 && !isBench) {
-      pushGame(`${cap(displayName(f.creature))} · Mending +${healed}.`, {
-        heal: healed, cls: 'heal',
-        anim: () => spawnFloat(side, `+${healed}`, 'heal'),
-      });
-      await drainBeats();
-    }
-    f.statuses.bloom.turns--;
-    if (f.statuses.bloom.turns <= 0) f.statuses.bloom = null;
+  if (f.statuses.brittle && f.statuses.brittle.turns > 0) {
+    f.statuses.brittle.turns--;
+    if (f.statuses.brittle.turns <= 0) f.statuses.brittle = null;
   }
-  if (f.statuses.soaking && f.statuses.soaking.turns > 0) {
-    f.statuses.soaking.turns--;
-    if (f.statuses.soaking.turns <= 0) f.statuses.soaking = null;
+  if (f.statuses.drained && f.statuses.drained.turns > 0) {
+    f.statuses.drained.turns--;
+    if (f.statuses.drained.turns <= 0) f.statuses.drained = null;
   }
-  if (f.statuses.dazed && f.statuses.dazed.turns > 0) {
-    f.statuses.dazed.turns--;
-    if (f.statuses.dazed.turns <= 0) f.statuses.dazed = null;
-  }
-  if (f.statuses.cursed && f.statuses.cursed.turns > 0) {
-    f.statuses.cursed.turns--;
-    if (f.statuses.cursed.turns <= 0) f.statuses.cursed = null;
+  if (f.statuses.stun && f.statuses.stun.turns > 0) {
+    f.statuses.stun.turns--;
+    if (f.statuses.stun.turns <= 0) f.statuses.stun = null;
   }
 }
 
 export async function tickStartOfRound(f, side) {
   if (!f) return;
-  // healing-over-time tick
-  if (f.healing && f.healing.turnsLeft > 0) {
-    const healed = applyHeal(f, f.healing.perTurn);
-    f.healing.turnsLeft--;
-    if (f.healing.turnsLeft <= 0) f.healing = null;
-    if (healed > 0) {
-      pushGame(`${cap(displayName(f.creature))} · regen +${healed}.`, {
-        heal: healed, cls: 'heal',
-        anim: () => spawnFloat(side, `+${healed}`, 'heal'),
-      });
-      await drainBeats();
-    }
-  }
   await tickFighterStatuses(f, side, false);
-  // Reset bracingThisTurn at start of each round
   f.bracingThisTurn = false;
 }
 

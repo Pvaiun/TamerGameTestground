@@ -1,18 +1,16 @@
-// Dossier battle screen — energy + dual-log layout.
+// Battle screen — energy + charge layout.
 //
 // Vertical layout:
-//   1. engagement strip (depth, round, pace, intent badge)
-//   2. dossier grid (player col | divider | enemy col)
-//      - each col: bench bar, name+subtitle, glyph+notes, hp+stat bars,
-//        afflictions, signature stack, passives
-//   3. action bar (energy pips + ability buttons + end turn)
-//   4. log panel (gameplay log on left, lore line on right)
+//   1. engagement strip (depth, round, pace)
+//   2. enemy panel: name, HP, intent badge, stats, statuses, charge
+//   3. player panel: name, HP, intent reminder, stats, statuses, charge, energy
+//   4. action bar: ability cards + swap + end-turn
+//   5. compact battle log + atmospheric lore line
 
-import { el, attachLongPress, app } from './dom.js';
-import { ABILITIES, PASSIVES, TYPE_CHART, VOICE } from '../data.js';
-import { affName as voiceAffName } from '../combat/log.js';
+import { el, app } from './dom.js';
+import { ABILITIES, PASSIVES, TYPE_CHART } from '../data.js';
 import { state, TOTAL_WAVES } from '../state.js';
-import { displayName, getDossierNotes } from '../creature.js';
+import { displayName } from '../creature.js';
 import { renderGlyph } from './glyphs.js';
 import { openInspectModal, openAbilityTooltip } from './cards.js';
 import { playerAct, playerSwap, playerEndTurn } from '../combat/battle.js';
@@ -20,28 +18,19 @@ import { applyHpFill } from './hpTween.js';
 import { parseProse } from './textCorrupt.js';
 import { estimateDamage, effectiveStat, abilityCost } from '../combat/damage.js';
 
-const STAT_BAR_MAX = 120;
-
 export function renderBattle() {
   const screen = el('div', { class: 'battle-screen' });
   screen.appendChild(engagementStripEl());
-
-  const grid = el('div', { class: 'dossier-grid' });
-  grid.appendChild(dossierColEl(state.pf, state.bf, 'player'));
-  grid.appendChild(el('div', { class: 'dossier-divider' }));
-  grid.appendChild(dossierColEl(state.ef, state.ebf, 'enemy'));
-  screen.appendChild(grid);
-
+  screen.appendChild(fighterPanelEl(state.ef, state.ebf, 'enemy'));
+  screen.appendChild(fighterPanelEl(state.pf, state.bf, 'player'));
   screen.appendChild(actionBarEl());
   screen.appendChild(logPanelEl());
-
   app().appendChild(screen);
-  // Auto-scroll game log to bottom
   const gl = document.querySelector('.gamelog-scroll');
   if (gl) gl.scrollTop = gl.scrollHeight;
 }
 
-// ── header ───────────────────────────────────────────────────────────
+// ── engagement strip ─────────────────────────────────────────────────
 function engagementStripEl() {
   const strip = el('div', { class: 'engagement-strip' });
 
@@ -51,23 +40,13 @@ function engagementStripEl() {
     el('span', {}, `descent ${pad2(state.wave)}/${pad2(TOTAL_WAVES)}`),
     el('span', { class: 'eng-sep' }, ' · '),
     el('span', {}, `round ${state.round || 0}`),
-  ]);
+    state.isEliteBattle ? el('span', { class: 'eng-tag elite' }, ' · ELITE') : null,
+  ].filter(Boolean));
   strip.appendChild(left);
 
-  // Center: enemy intent badge
-  const intent = state.enemyIntent;
-  const center = el('div', { class: 'eng-center' });
-  if (intent) {
-    const badge = el('div', { class: 'intent-badge intent-' + intent.kind });
-    badge.appendChild(el('span', { class: 'intent-icon' }, intent.icon || '·'));
-    badge.appendChild(el('span', { class: 'intent-label' }, intent.label || '?'));
-    if (intent.power) badge.appendChild(el('span', { class: 'intent-power' }, '~' + estimateIntentDamage(intent)));
-    center.appendChild(el('span', { class: 'intent-prefix' }, 'they plan: '));
-    center.appendChild(badge);
-  }
-  strip.appendChild(center);
+  // Center is intentionally empty (intent moved into enemy panel).
+  strip.appendChild(el('div', { class: 'eng-center' }));
 
-  // Right: pace toggle
   const speedLabel = state.combatSpeed === 2 ? 'fast' : 'slow';
   const speedBtn = el('button', { class: 'eng-btn' });
   speedBtn.textContent = `pace · ${speedLabel}`;
@@ -76,246 +55,179 @@ function engagementStripEl() {
     speedBtn.textContent = `pace · ${state.combatSpeed === 2 ? 'fast' : 'slow'}`;
   });
   strip.appendChild(el('div', { class: 'eng-right' }, [speedBtn]));
-
   return strip;
 }
 
-function estimateIntentDamage(intent) {
-  if (intent.kind !== 'attack' || !state.ef || !state.pf) return '?';
-  // Look up the ability with that intent label
-  for (const k of state.ef.creature.abilities) {
-    const a = ABILITIES[k];
-    if (a && (a.intent === intent.label || a.name === intent.label)) {
-      return estimateDamage(state.ef, state.pf, a);
-    }
-  }
-  return '?';
-}
-
-// ── dossier column ───────────────────────────────────────────────────
-function dossierColEl(active, bench, side) {
-  const col = el('div', { class: `dossier-col ${side}` });
-  col.appendChild(benchBarEl(bench, side));
-
+// ── fighter panel ────────────────────────────────────────────────────
+function fighterPanelEl(active, bench, side) {
+  const panel = el('div', { class: `fighter-panel ${side}` });
+  if (!active) return panel;
   const c = active.creature;
-  col.appendChild(el('div', { class: 'doc-title', html: parseProse(displayName(c)) }));
-  col.appendChild(subtitleEl(c));
-  col.appendChild(fieldNotesEl(c, side, active));
-  col.appendChild(hpRowEl(active, side));
-  col.appendChild(statBlockEl(active, side));
-  col.appendChild(sigStackEl(active, side));
-  col.appendChild(afflictionsEl(active));
-  col.appendChild(passivesEl(c));
 
-  return col;
-}
-
-function benchBarEl(f, side) {
-  const wrap = el('div', { class: 'bench-inline ' + side });
-  if (!f) {
-    wrap.appendChild(el('span', { class: 'bench-empty-inline' },
-      side === 'player' ? '— no companion benched —' : '— solitary —'));
-    return wrap;
-  }
-  const c = f.creature;
-  const g = el('span', { class: 'bench-glyph-inline' });
-  g.innerHTML = renderGlyph(c.species);
-
-  const text = el('span', { class: 'bench-text' });
-  text.appendChild(el('span', { class: 'bench-name-inline', html: parseProse(displayName(c)) }));
-  text.appendChild(el('span', { class: 'bench-sep' }, ' · '));
-  text.appendChild(el('span', { class: 'bench-tag' }, 'benched'));
-
-  const bar = el('span', { class: 'bench-bar-inline' });
-  const fill = el('span', { class: 'bench-bar-inline-fill' });
-  bar.appendChild(fill);
-  applyHpFill(fill, f);
-
-  const hp = el('span', { class: 'bench-hp-inline' });
-  hp.appendChild(el('span', { class: 'bench-hp-num' }, `${Math.max(0, f.hp)}/${c.maxHp}`));
-
-  // Status badges on bench
-  const statuses = activeAfflictions(f);
-  const stat = el('span', { class: 'bench-status-inline' });
-  if (statuses.length) {
-    stat.textContent = statuses.map(a => a.short).join('·');
-  }
-
-  wrap.appendChild(g);
-  wrap.appendChild(text);
-  wrap.appendChild(bar);
-  wrap.appendChild(hp);
-  if (statuses.length) wrap.appendChild(stat);
-  attachLongPress(wrap, () => openInspectModal(c), null);
-  return wrap;
-}
-
-function subtitleEl(c) {
-  const key = VOICE.subtitles[c.species] || VOICE.subtitles[c.type] || '—';
-  const e = el('div', { class: 'doc-subtitle' });
-  e.innerHTML = parseProse(key);
-  return e;
-}
-
-function fieldNotesEl(c, side, fighter) {
-  const wrap = el('div', { class: 'field-notes-block' });
-  wrap.appendChild(el('div', { class: 'sec-label-doc' }, '─ Patient file ─'));
-
-  const body = el('div', { class: 'field-notes-body ' + side });
-  const glyph = el('div', { class: 'glyph-inline glyph-portrait' });
+  // Header row: glyph + name + tags
+  const head = el('div', { class: 'fp-head' });
+  const glyph = el('div', { class: 'fp-glyph glyph-portrait', title: 'click for full file' });
   glyph.innerHTML = renderGlyph(c.species);
-  attachLongPress(glyph, () => openInspectModal(c), null);
+  glyph.addEventListener('click', () => openInspectModal(c));
+  head.appendChild(glyph);
 
-  const lines = getDossierNotes(c);
-  const prose = el('div', { class: 'field-notes-prose' });
-  for (const line of lines.slice(0, 3)) {
-    const lineEl = el('div', { class: 'fn-line' });
-    lineEl.innerHTML = parseProse(line);
-    prose.appendChild(lineEl);
+  const headRight = el('div', { class: 'fp-head-right' });
+  const nameRow = el('div', { class: 'fp-name-row' });
+  const nameSpan = el('span', { class: 'fp-name', html: parseProse(displayName(c)) });
+  nameRow.appendChild(nameSpan);
+  nameRow.appendChild(el('span', { class: 'fp-meta' }, ` · ${c.type} · l${c.level}`));
+  headRight.appendChild(nameRow);
+
+  // Intent badge (enemy only). Player gets a small reminder of their charge usage hint.
+  if (side === 'enemy' && state.enemyIntent) {
+    headRight.appendChild(intentRowEl(state.enemyIntent));
+  } else if (side === 'player') {
+    headRight.appendChild(playerHintEl(active));
   }
-  if (side === 'enemy') {
-    body.appendChild(prose);
-    body.appendChild(glyph);
-  } else {
-    body.appendChild(glyph);
-    body.appendChild(prose);
+  head.appendChild(headRight);
+  panel.appendChild(head);
+
+  // HP bar (big and prominent).
+  panel.appendChild(hpBarBigEl(active));
+
+  // Stat + status row (compact: atk/def/spd + statuses inline).
+  panel.appendChild(statRowCompactEl(active, side));
+
+  // Charge pips row.
+  panel.appendChild(chargeRowEl(active, side));
+
+  // Bench preview row (small).
+  if (bench) panel.appendChild(benchRowEl(bench, side));
+
+  return panel;
+}
+
+function intentRowEl(intent) {
+  const wrap = el('div', { class: 'fp-intent' });
+  wrap.appendChild(el('span', { class: 'intent-prefix' }, 'they plan: '));
+  const badge = el('span', { class: 'intent-badge intent-' + intent.kind });
+  badge.appendChild(el('span', { class: 'intent-icon' }, intent.icon || '·'));
+  badge.appendChild(el('span', { class: 'intent-label' }, intent.label || '?'));
+  if (intent.kind === 'attack' && intent.estDmg > 0) {
+    badge.appendChild(el('span', { class: 'intent-dmg' }, `~${intent.estDmg}`));
   }
-  wrap.appendChild(body);
+  wrap.appendChild(badge);
   return wrap;
 }
 
-function hpRowEl(f, side) {
+function playerHintEl(f) {
+  const wrap = el('div', { class: 'fp-intent player' });
+  const charge = f.charge || 0;
+  if (charge >= 2) {
+    wrap.appendChild(el('span', { class: 'intent-prefix' }, 'ready: '));
+    wrap.appendChild(el('span', { class: 'intent-badge intent-buff' }, [
+      el('span', { class: 'intent-icon' }, '◆'),
+      el('span', { class: 'intent-label' }, `${charge} Charge — Spend boosted`),
+    ]));
+  } else {
+    wrap.appendChild(el('span', { class: 'intent-prefix' }, 'tip: '));
+    wrap.appendChild(el('span', { class: 'fp-tip' }, 'Build Charge then Spend for burst.'));
+  }
+  return wrap;
+}
+
+function hpBarBigEl(f) {
   const max = f.creature.maxHp;
   const cur = Math.max(0, f.hp);
-  const row = el('div', { class: 'hp-row-doc ' + side });
-
-  const label = el('span', { class: 'hp-label' }, 'hp');
-  const bar = el('span', { class: 'hp-bar-doc' });
-  const fill = el('span', { class: 'hp-bar-doc-fill' });
+  const wrap = el('div', { class: 'hp-big' });
+  const labelLeft = el('span', { class: 'hp-big-num' }, `${pad3(cur)} / ${pad3(max)}`);
+  const bar = el('div', { class: 'hp-big-bar' });
+  const fill = el('span', { class: 'hp-big-fill' });
   bar.appendChild(fill);
   applyHpFill(fill, f);
-
-  const num = el('span', { class: 'hp-num' });
-  num.appendChild(el('span', { class: 'hp-cur' }, pad3(cur)));
-  num.appendChild(el('span', { class: 'hp-slash' }, '/'));
-  num.appendChild(el('span', { class: 'hp-max' }, pad3(max)));
-
-  if (side === 'player') {
-    row.appendChild(label); row.appendChild(bar); row.appendChild(num);
-  } else {
-    row.appendChild(num); row.appendChild(bar); row.appendChild(label);
-  }
-  return row;
+  wrap.appendChild(labelLeft);
+  wrap.appendChild(bar);
+  return wrap;
 }
 
-function statBlockEl(f, side) {
-  const wrap = el('div', { class: 'stat-block-doc ' + side });
+function statRowCompactEl(f, _side) {
+  const wrap = el('div', { class: 'fp-stat-row' });
   for (const [k, lbl] of [['atk', 'atk'], ['def', 'def'], ['spd', 'spd']]) {
     const baseVal = f.creature.stats[k];
     const effective = effectiveStat(f, k);
     const m = (effective / baseVal) - 1;
-    const pct = Math.min(100, (effective / STAT_BAR_MAX) * 100);
-
-    const row = el('div', { class: 'stat-row-bar ' + side });
-    const label = el('span', { class: 'stat-bar-label' }, lbl);
-    const bar = el('span', { class: 'stat-bar' });
-    bar.appendChild(el('span', { class: 'stat-bar-fill', style: `width:${pct}%;` }));
-    const num = el('span', { class: 'stat-bar-num' }, pad2(effective));
+    const cell = el('span', { class: 'fp-stat-cell' });
+    cell.appendChild(el('span', { class: 'fp-stat-label' }, lbl));
+    cell.appendChild(el('span', { class: 'fp-stat-num' }, pad2(effective)));
     if (Math.abs(m) > 0.04) {
-      const tag = el('span', { class: 'stat-mod-tag ' + (m > 0 ? 'pos' : 'neg') },
-        ` ${m > 0 ? '+' : ''}${Math.round(m * 100)}%`);
-      num.appendChild(tag);
+      cell.appendChild(el('span', { class: 'fp-stat-mod ' + (m > 0 ? 'pos' : 'neg') },
+        ` ${m > 0 ? '+' : ''}${Math.round(m * 100)}%`));
     }
-    if (side === 'player') {
-      row.appendChild(label); row.appendChild(bar); row.appendChild(num);
-    } else {
-      row.appendChild(num); row.appendChild(bar); row.appendChild(label);
+    wrap.appendChild(cell);
+  }
+  // Statuses
+  const statuses = activeAfflictions(f);
+  if (statuses.length) {
+    wrap.appendChild(el('span', { class: 'fp-status-sep' }, '·'));
+    for (const a of statuses) {
+      wrap.appendChild(el('span', { class: 'fp-status-pill status-' + a.key }, [
+        el('span', { class: 'fp-status-name' }, a.label),
+        el('span', { class: 'fp-status-turns' }, ` ${a.suffix}`),
+      ]));
     }
-    wrap.appendChild(row);
   }
   return wrap;
 }
 
-function sigStackEl(f, side) {
-  const sig = f.creature.signature;
-  if (!sig) return el('div', { style: 'display:none' });
-  const max = sig.max ?? 5;
-  const stacks = f.sigStacks || 0;
-  const wrap = el('div', { class: 'sig-row ' + side });
-  wrap.appendChild(el('span', { class: 'sig-label' }, sig.label.toLowerCase()));
-  const pips = el('span', { class: 'sig-pips' });
-  for (let i = 0; i < max; i++) {
-    pips.appendChild(el('span', { class: 'sig-pip ' + (i < stacks ? 'on' : 'off') }, '◆'));
+function chargeRowEl(f, _side) {
+  const wrap = el('div', { class: 'fp-charge-row' });
+  wrap.appendChild(el('span', { class: 'fp-charge-label' }, 'charge'));
+  const pips = el('span', { class: 'fp-charge-pips' });
+  const charge = f.charge || 0;
+  for (let i = 0; i < 3; i++) {
+    pips.appendChild(el('span', { class: 'charge-pip ' + (i < charge ? 'on' : 'off') }, '◆'));
   }
   wrap.appendChild(pips);
-  // Marks (lives on defender, separate from sigStacks)
-  if (f.marks > 0) {
-    const m = el('span', { class: 'sig-marks' });
-    m.appendChild(el('span', { class: 'sig-label' }, 'marks'));
-    for (let i = 0; i < f.marks; i++) m.appendChild(el('span', { class: 'sig-pip on mark' }, '✕'));
-    wrap.appendChild(m);
+  // Passive callout (compact, single line).
+  const list = (f.creature.passives && f.creature.passives.length) ? f.creature.passives : [];
+  if (list.length) {
+    const p = PASSIVES[list[0]];
+    if (p) {
+      wrap.appendChild(el('span', { class: 'fp-passive-inline', title: p.desc }, [
+        el('span', { class: 'fp-passive-sep' }, ' · '),
+        el('span', { class: 'fp-passive-bullet' }, '•'),
+        el('span', { class: 'fp-passive-name' }, ` ${p.name}`),
+      ]));
+    }
   }
   return wrap;
 }
 
-function afflictionsEl(f) {
-  const wrap = el('div', { class: 'afflictions-block' });
-  wrap.appendChild(el('div', { class: 'sec-label-doc' }, '─ Afflictions ─'));
-  const items = activeAfflictions(f);
-  const inner = el('div', { class: 'afflictions-list' });
-  if (items.length === 0) {
-    inner.appendChild(el('span', { class: 'aff-empty' }, '— none observed —'));
-  } else {
-    items.forEach((a, i) => {
-      if (i > 0) inner.appendChild(el('span', { class: 'aff-sep' }, ' · '));
-      inner.appendChild(el('span', { class: 'aff-blot' }, '●'));
-      inner.appendChild(el('span', { class: 'aff-name' }, ` ${a.label}`));
-      if (a.suffix) inner.appendChild(el('span', { class: 'aff-suffix' }, ` ${a.suffix}`));
-    });
-  }
-  wrap.appendChild(inner);
+function benchRowEl(f, side) {
+  const wrap = el('div', { class: 'fp-bench' });
+  const c = f.creature;
+  const g = el('span', { class: 'fp-bench-glyph' });
+  g.innerHTML = renderGlyph(c.species);
+  wrap.appendChild(g);
+  wrap.appendChild(el('span', { class: 'fp-bench-label' }, 'bench'));
+  wrap.appendChild(el('span', { class: 'fp-bench-name' }, displayName(c)));
+  // HP bar mini
+  const bar = el('span', { class: 'fp-bench-bar' });
+  const fill = el('span', { class: 'fp-bench-fill' });
+  bar.appendChild(fill);
+  applyHpFill(fill, f);
+  wrap.appendChild(bar);
+  wrap.appendChild(el('span', { class: 'fp-bench-hp' }, `${Math.max(0, f.hp)}/${c.maxHp}`));
+  wrap.addEventListener('click', () => openInspectModal(c));
   return wrap;
 }
 
 function activeAfflictions(f) {
   const out = [];
   const s = f.statuses || {};
-  if (s.burn)    out.push({ label: 'Fevering', short: 'F', suffix: `${s.burn.turns}r` });
-  if (s.bloom)   out.push({ label: 'Mending',  short: 'M', suffix: `${s.bloom.turns}r` });
-  if (s.soaking) out.push({ label: 'Drained',  short: 'D', suffix: `${s.soaking.turns}r` });
-  if (s.cursed)  out.push({ label: 'Broken',   short: 'B', suffix: `${s.cursed.turns}r` });
-  if (s.dazed)   out.push({ label: 'Sedated',  short: 'S', suffix: `${s.dazed.turns}r` });
-  if (f.healing && f.healing.turnsLeft > 0) {
-    out.push({ label: 'regen', short: 'R', suffix: `${f.healing.turnsLeft}r` });
-  }
+  if (s.burn)    out.push({ key: 'burn',    label: 'Fevering', suffix: `${s.burn.turns}r` });
+  if (s.brittle) out.push({ key: 'brittle', label: 'Brittle',  suffix: `${s.brittle.turns}r` });
+  if (s.drained) out.push({ key: 'drained', label: 'Drained',  suffix: `${s.drained.turns}r` });
+  if (s.stun)    out.push({ key: 'stun',    label: 'Stunned',  suffix: `${s.stun.turns}r` });
   return out;
 }
 
-function passivesEl(c) {
-  const wrap = el('div', { class: 'passives-block' });
-  wrap.appendChild(el('div', { class: 'sec-label-doc' }, '─ Passives ─'));
-  const list = (c.passives && c.passives.length) ? c.passives : [];
-  if (list.length === 0) {
-    wrap.appendChild(el('div', { class: 'passive-empty' }, '— none observed —'));
-    return wrap;
-  }
-  for (const k of list) {
-    const p = PASSIVES[k];
-    const row = el('div', { class: 'passive-line-doc' });
-    const top = el('div', { class: 'passive-prose' });
-    top.appendChild(el('span', { class: 'passive-bullet' }, '•'));
-    top.appendChild(el('span', { class: 'passive-name-doc' }, ` ${p ? p.name : k}`));
-    top.appendChild(el('span', { class: 'passive-sep' }, ' · '));
-    const desc = el('span', { class: 'passive-desc-doc' });
-    desc.textContent = (p && p.desc) || '—';
-    top.appendChild(desc);
-    row.appendChild(top);
-    wrap.appendChild(row);
-  }
-  return wrap;
-}
-
-// ── action bar (energy + abilities + end turn) ───────────────────────
+// ── action bar ───────────────────────────────────────────────────────
 function actionBarEl() {
   const bar = el('div', { class: 'action-bar' });
   const isYour = state.turnPhase === 'player' && !state.acting;
@@ -342,7 +254,7 @@ function actionBarEl() {
     return bar;
   }
 
-  // Ability grid
+  // Ability grid (4 cards in a row on wide screens, 2x2 on narrow).
   const grid = el('div', { class: 'ability-grid' });
   for (const k of state.pf.creature.abilities) {
     const a = ABILITIES[k];
@@ -356,25 +268,25 @@ function actionBarEl() {
     if (!affordable) btn.disabled = true;
     btn.appendChild(abilityCardContent(a, cost));
     btn.addEventListener('click', () => playerAct(k));
-    attachLongPress(btn, () => openAbilityTooltip(k), affordable ? () => playerAct(k) : null);
+    btn.addEventListener('contextmenu', (e) => { e.preventDefault(); openAbilityTooltip(k); });
     grid.appendChild(btn);
   }
   bar.appendChild(grid);
 
-  // Action options row: Swap, Inspect, End Turn
+  // Action options row
   const row = el('div', { class: 'action-options' });
   const canSwap = state.bf && state.bf.hp > 0 && state.pf.energy >= 1;
   const swapBtn = el('button', { class: 'opt-btn ' + (canSwap ? '' : 'unafford') });
   if (!canSwap) swapBtn.disabled = true;
-  swapBtn.appendChild(el('span', { class: 'opt-icon' }, '↔'));
-  swapBtn.appendChild(el('span', {}, ` Swap · ${state.bf ? displayName(state.bf.creature) : '—'}`));
+  swapBtn.appendChild(el('span', { class: 'opt-icon' }, '⇆'));
+  swapBtn.appendChild(el('span', {}, ` Swap${state.bf ? ' · ' + displayName(state.bf.creature) : ''}`));
   swapBtn.appendChild(el('span', { class: 'opt-cost' }, ' 1E'));
   swapBtn.addEventListener('click', () => playerSwap());
   row.appendChild(swapBtn);
 
   const inspectBtn = el('button', { class: 'opt-btn' });
   inspectBtn.appendChild(el('span', { class: 'opt-icon' }, '◇'));
-  inspectBtn.appendChild(el('span', {}, ' Read enemy file'));
+  inspectBtn.appendChild(el('span', {}, ' Inspect enemy'));
   inspectBtn.addEventListener('click', () => openInspectModal(state.ef.creature));
   row.appendChild(inspectBtn);
 
@@ -391,20 +303,17 @@ function actionBarEl() {
 function actionHeaderEl(isYour) {
   const head = el('div', { class: 'action-header' });
   head.appendChild(el('span', { class: 'action-prompt' }, isYour ? '▸ your turn — ' : '— '));
-
-  // Energy display
   const energy = state.pf.energy ?? 0;
   const max = state.pf.maxEnergy ?? 3;
   const pips = el('span', { class: 'energy-pips' });
-  for (let i = 0; i < max; i++) {
+  for (let i = 0; i < Math.max(max, energy); i++) {
     pips.appendChild(el('span', { class: 'energy-pip ' + (i < energy ? 'on' : 'off') }, '◆'));
   }
   head.appendChild(pips);
   head.appendChild(el('span', { class: 'energy-num' }, ` ${energy}/${max} energy`));
-  // Combo display
   const acts = state.pf.actionsThisTurn || 0;
   if (acts > 0) {
-    const combo = Math.min(50, Math.round(18 * acts));
+    const combo = Math.min(36, Math.round(12 * acts));
     head.appendChild(el('span', { class: 'combo-tag' }, ` · combo +${combo}%`));
   }
   return head;
@@ -412,7 +321,6 @@ function actionHeaderEl(isYour) {
 
 function abilityCardContent(a, cost) {
   const wrap = el('div', { class: 'ability-card-inner' });
-  // Top row: name + cost
   const top = el('div', { class: 'ability-card-top' });
   top.appendChild(el('span', { class: 'ability-card-name' }, a.name || ''));
   const costEl = el('span', { class: 'ability-card-cost' });
@@ -420,7 +328,6 @@ function abilityCardContent(a, cost) {
   top.appendChild(costEl);
   wrap.appendChild(top);
 
-  // Tags row: damage estimate, element, type matchup
   const tags = el('div', { class: 'ability-card-tags' });
   const dmg = estimateDamage(state.pf, state.ef, a);
   if (dmg > 0) tags.appendChild(el('span', { class: 'tag dmg' }, `~${dmg}`));
@@ -429,9 +336,11 @@ function abilityCardContent(a, cost) {
   if (a.element) tags.appendChild(el('span', { class: 'tag elem ' + a.element }, a.element));
   const matchup = matchupChipFor(a);
   if (matchup) tags.appendChild(matchup);
+  // Build / Spend role marker.
+  if (a.tags && a.tags.includes('build')) tags.appendChild(el('span', { class: 'tag role build' }, 'build'));
+  if (a.tags && a.tags.includes('spend')) tags.appendChild(el('span', { class: 'tag role spend' }, 'spend'));
   wrap.appendChild(tags);
 
-  // Effect description (one-liner)
   if (a.effect) {
     const desc = el('div', { class: 'ability-card-desc' }, a.effect);
     wrap.appendChild(desc);
@@ -443,7 +352,7 @@ function abilityKind(a) {
   if (!a) return null;
   const flat = (a.phases || []).flat();
   if (flat.some(e => e.type === 'damage')) return null;
-  if (flat.some(e => e.type === 'heal_self_pct' || e.type === 'heal_over_time')) return 'heal';
+  if (flat.some(e => e.type === 'heal_self_pct')) return 'heal';
   if (flat.some(e => e.type === 'apply_status')) return 'status';
   if (flat.some(e => e.type === 'buff')) return 'buff';
   if (flat.some(e => e.type === 'swap')) return 'swap';
@@ -463,15 +372,12 @@ function matchupChipFor(a) {
   return el('span', { class: 'tag matchup ' + cls }, text);
 }
 
-// Module-level: track which lore IDs we've already typed out, so we don't
-// retrigger the typewriter on every render() while a battle is unfolding.
 const _typedLoreIds = new Set();
 
-// ── log panel (dual stream) ──────────────────────────────────────────
+// ── log panel ────────────────────────────────────────────────────────
 function logPanelEl() {
   const wrap = el('div', { class: 'log-panel' });
 
-  // Left: gameplay log (scrollable, persistent)
   const game = el('div', { class: 'gamelog-block' });
   game.appendChild(el('div', { class: 'log-header' }, '— battle log —'));
   const scroll = el('div', { class: 'gamelog-scroll' });
@@ -481,21 +387,19 @@ function logPanelEl() {
       line.appendChild(el('span', { class: 'gl-arrow' }, entry.actor === 'player' ? '▸ ' : '◂ '));
     }
     line.appendChild(el('span', { class: 'gl-text' }, entry.text));
-    if (entry.damage > 0) line.appendChild(el('span', { class: 'gl-dmg' }, ` -${entry.damage}`));
+    if (entry.damage > 0) line.appendChild(el('span', { class: 'gl-dmg' }, ` −${entry.damage}`));
     if (entry.heal > 0)   line.appendChild(el('span', { class: 'gl-heal' }, ` +${entry.heal}`));
     scroll.appendChild(line);
   }
   game.appendChild(scroll);
   wrap.appendChild(game);
 
-  // Right: lore line (typewriter, atmospheric)
   const lore = el('div', { class: 'lore-block' });
   lore.appendChild(el('div', { class: 'log-header' }, '— what they wrote down —'));
   const loreInner = el('div', { class: 'lore-inner' });
   if (state.loreLine && state.loreLine.text) {
     const line = el('div', { class: 'lore-line ' + (state.loreLine.cls || '') });
     line.innerHTML = parseProse(state.loreLine.text);
-    // Tag the line with its id so CSS can fade-in newly-arrived lore lines.
     if (!_typedLoreIds.has(state.loreLine.id)) {
       _typedLoreIds.add(state.loreLine.id);
       line.classList.add('lore-fade-in');
@@ -506,35 +410,8 @@ function logPanelEl() {
   }
   lore.appendChild(loreInner);
   wrap.appendChild(lore);
-
   return wrap;
 }
 
-function typewriterizeHTML(html, msPerChar, id) {
-  const tmp = document.createElement('div');
-  tmp.innerHTML = html;
-  let charIdx = 0;
-  function walk(node) {
-    if (node.nodeType === 3) {
-      const text = node.textContent;
-      const frag = document.createDocumentFragment();
-      for (const ch of text) {
-        const span = document.createElement('span');
-        span.className = 'tw-char tw-id-' + id;
-        span.style.animationDelay = (charIdx++ * msPerChar) + 'ms';
-        span.textContent = ch;
-        frag.appendChild(span);
-      }
-      node.parentNode.replaceChild(frag, node);
-    } else if (node.nodeType === 1) {
-      const children = Array.from(node.childNodes);
-      for (const c of children) walk(c);
-    }
-  }
-  walk(tmp);
-  return tmp.innerHTML;
-}
-
-// ── helpers ──────────────────────────────────────────────────────────
 function pad2(n) { return String(Math.max(0, n | 0)).padStart(2, '0'); }
 function pad3(n) { return String(Math.max(0, n | 0)).padStart(3, '0'); }

@@ -43,16 +43,16 @@ export function renderStart() {
   intro.innerHTML = parseProse([
     'I found the address on a card I do not remember writing. The road ended at the building.',
     'The nurse opened the door before I knocked. She said they were expecting me. She handed me a file. She said it had been waiting.',
-    'Ten descents. One room at a time. Some rooms are paperwork. Some are patients. On the third, sixth, and ninth, the line ~~asks~~ requires a sacrifice — two written into one.',
+    'Ten descents. One room at a time. Some are patients. Some are paperwork. On the third, sixth, and ninth, the line ~~asks~~ requires a sacrifice — two written into one.',
     '!!The door at the top is locked from this side.!!',
   ].join('\n\n'));
   page.appendChild(intro);
 
-  const note = el('div', { class: 'doc-prose dim' });
-  note.innerHTML = parseProse(
-    'Each patient holds something they do not let go of. When two are written into one, the offspring keeps a piece of each. !!Nothing!! comes back unchanged.'
+  const help = el('div', { class: 'doc-prose dim' });
+  help.innerHTML = parseProse(
+    'How it works: each round you get **3 Energy**. Spend it on actions. Most cost 1-2. Build Charge with light hits, then Spend it on a finisher for burst damage. Type matters — fire>grass>water>fire, light↔dark. You carry **two patients** at a time. The bench can be swapped to.'
   );
-  page.appendChild(note);
+  page.appendChild(help);
 
   page.appendChild(actionRow(
     docButton('Accept the file', () => {
@@ -290,6 +290,7 @@ export function renderBreedOffer() {
         currentPair: [],
         chosenAbilities: [],
         chosenPassives: [],
+        chosenShape: null,
         passiveOptions: [],
         abilityOptions: [],
       };
@@ -364,7 +365,7 @@ export function renderBreed() {
     const [pa, pb] = bs.currentPair;
     const intro = el('div', { class: 'doc-prose' });
     intro.innerHTML = parseProse(
-      'I write the offspring. Four ~~things it can do~~ actions. Two qualities. The first quality decides the shape. It will not be either of them.'
+      'I write the offspring. Four ~~things it can do~~ actions, one quality, and a ~~body~~ shape it takes from one of them.'
     );
     page.appendChild(intro);
 
@@ -374,15 +375,34 @@ export function renderBreed() {
         bs.currentPair = [];
         bs.chosenAbilities = [];
         bs.chosenPassives = [];
+        bs.chosenShape = null;
         render();
       }, 'small'),
     ]));
 
     const parents = el('div', { class: 'doc-card-list two-up' });
-    parents.appendChild(creatureCardEl(pa, { showGrowths: true }));
-    parents.appendChild(creatureCardEl(pb, { showGrowths: true }));
+    parents.appendChild(creatureCardEl(pa, { showGrowths: true, noInspect: true }));
+    parents.appendChild(creatureCardEl(pb, { showGrowths: true, noInspect: true }));
     page.appendChild(parents);
 
+    // Shape picker: which parent's body the child takes.
+    page.appendChild(el('div', { class: 'sec-label-doc' },
+      `─ Shape · whose body it takes ─`));
+    const shapeRow = el('div', { class: 'pick-row' });
+    for (const [parent, key] of [[pa, 'a'], [pb, 'b']]) {
+      const picked = bs.chosenShape === key;
+      shapeRow.appendChild(el('button', {
+        class: 'pick-btn' + (picked ? ' picked' : ''),
+        onclick: () => { bs.chosenShape = picked ? null : key; render(); },
+      }, [
+        el('span', { class: 'pick-marker' }, picked ? '▸ ' : '  '),
+        el('span', { class: 'pick-name' }, parent.species),
+        el('span', { class: 'pick-tag' }, ` · ${parent.type}`),
+      ]));
+    }
+    page.appendChild(shapeRow);
+
+    // Ability picker: 4 from combined pool.
     page.appendChild(el('div', { class: 'sec-label-doc' },
       `─ Actions · ${bs.chosenAbilities.length} of 4 ─`));
     const aRow = el('div', { class: 'pick-row' });
@@ -400,20 +420,18 @@ export function renderBreed() {
       }, [
         el('span', { class: 'pick-marker' }, picked ? '▸ ' : '  '),
         el('span', { class: 'pick-name' }, a ? a.name : k),
-      ]));
+        a && a.element ? el('span', { class: 'pick-tag' }, ` · ${a.element}`) : null,
+      ].filter(Boolean)));
     }
     page.appendChild(aRow);
 
+    // Passive picker: 1 from combined pool.
     page.appendChild(el('div', { class: 'sec-label-doc' },
-      `─ Qualities · ${bs.chosenPassives.length} of 2 ─`));
-    const qProse = el('div', { class: 'doc-prose dim' });
-    qProse.innerHTML = parseProse('The first pick decides the ~~body~~ shape. The second only marks the !!soul!!.');
-    page.appendChild(qProse);
+      `─ Quality · ${bs.chosenPassives.length} of 1 ─`));
     const pRow = el('div', { class: 'pick-row' });
     for (const opt of bs.passiveOptions) {
       const k = opt.key;
       const picked = bs.chosenPassives.includes(k);
-      const isShape = picked && bs.chosenPassives.indexOf(k) === 0;
       const p = PASSIVES[k];
       const ownerLabel = opt.owner === 'a' ? pa.species
                        : opt.owner === 'b' ? pb.species
@@ -422,23 +440,20 @@ export function renderBreed() {
         class: 'pick-btn' + (picked ? ' picked' : ''),
         title: (p ? p.desc : '') + ` (from ${ownerLabel})`,
         onclick: () => {
-          if (picked) bs.chosenPassives = bs.chosenPassives.filter(x => x !== k);
-          else if (bs.chosenPassives.length < 2) bs.chosenPassives.push(k);
+          if (picked) bs.chosenPassives = [];
+          else bs.chosenPassives = [k];
           render();
         },
       }, [
         el('span', { class: 'pick-marker' }, picked ? '▸ ' : '  '),
         el('span', { class: 'pick-name' }, p ? p.name : k),
-        isShape ? el('span', { class: 'pick-tag' }, ' · Shape') : null,
-      ].filter(Boolean));
+      ]);
       pRow.appendChild(btn);
     }
     page.appendChild(pRow);
 
-    if (bs.chosenAbilities.length === 4 && bs.chosenPassives.length === 2) {
-      const firstPick = bs.chosenPassives[0];
-      const firstOpt = bs.passiveOptions.find(o => o.key === firstPick);
-      const speciesFromB = firstOpt && firstOpt.owner === 'b';
+    if (bs.chosenAbilities.length === 4 && bs.chosenPassives.length === 1 && bs.chosenShape) {
+      const speciesFromB = bs.chosenShape === 'b';
       const child = makeChild(pa, pb, bs.chosenAbilities, bs.chosenPassives, speciesFromB);
       page.appendChild(el('div', { class: 'sec-label-doc' }, '─ Offspring · preview ─'));
       page.appendChild(creatureCardEl(child, { showGrowths: true }));
@@ -506,20 +521,20 @@ function pathIcon(kind) {
 
 function pathKindMeta(kind) {
   return ({
-    battle: 'patient',
-    elite: 'deeper room',
-    records: 'records hall',
-    tend: 'treatment',
-    boss: 'the door',
+    battle:  'patient · fight + capture',
+    elite:   'deeper room · fight + relic',
+    records: 'records hall · relic, no fight',
+    tend:    'treatment · permanent stat, no fight',
+    boss:    'the door',
   })[kind] || '';
 }
 
 function pathDescriptions(kind) {
   switch (kind) {
-    case 'battle':  return 'A patient. Two more files. The line continues.';
-    case 'elite':   return 'A heavier file. Larger reward — a relic. !!And worse waiting.!!';
-    case 'records': return 'A wall of paper. I take ~~one~~ a single page with me.';
-    case 'tend':    return 'Quiet room. One of mine grows steadier here.';
+    case 'battle':  return 'A patient. Two more files. The line continues. **xp + capture.**';
+    case 'elite':   return 'A heavier file. Larger reward — **a relic** plus xp. !!And worse waiting.!!';
+    case 'records': return 'A wall of paper. I take ~~one~~ a single page with me. **No fight.**';
+    case 'tend':    return 'Quiet room. One of mine grows steadier here. **+permanent stat. No fight.**';
     case 'boss':    return 'Open the door.';
     default:        return '';
   }

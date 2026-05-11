@@ -1,62 +1,26 @@
 // Energy-based, multi-action turn combat.
 //
 // Round structure:
-//   1. roundStart: tick statuses+ticks, fire round_start passives, refresh
-//      energy to maxEnergy on both sides, decide who goes first.
-//   2. firstSide takes their turn: plays actions until energy=0 or end turn.
-//   3. secondSide takes their turn.
-//   4. End-of-round bookkeeping (timed buffs decrement, etc.). Loop.
-//
-// "Turn" within this file = one fighter's playing block (multiple actions).
-// "Action" = one ability resolution.
-//
-// State machine:
-//   state.turnPhase: 'idle' | 'player' | 'enemy' | 'tick' | 'done'
-//   state.round: 1-indexed round number
-//
-// Public: beginBattle, playerAct, playerEndTurn, playerSwap, finishBattleIfDone,
-//         handleFaintsIfAny.
+//   1. roundStart: tick statuses, fire round_start passives, refresh energy.
+//   2. firstSide plays actions until energy=0 or end turn.
+//   3. secondSide plays.
+//   4. End-of-round bookkeeping (timed buffs decrement). Loop.
 
 import { ABILITIES, STATUSES, RELICS } from '../data.js';
 import { sleep } from '../rng.js';
-import { state, pushGame, pushLore, TOTAL_WAVES } from '../state.js';
+import { state, pushGame, TOTAL_WAVES } from '../state.js';
 import { displayName, gainXp, freshFighter } from '../creature.js';
 import { sfx } from '../audio.js';
 import { applyBattleStartPassive, applySwapInPassives, applyRoundStartPassives, winsTies } from './passives.js';
-import { effectiveStat, calculateDamage, abilityCost } from './damage.js';
+import { effectiveStat, abilityCost, calculateDamage } from './damage.js';
 import { applyStatus, cleanseStatuses, applyHeal, tickStartOfRound, tickFighterStatuses } from './status.js';
 import { aiChoose, aiPlanIntent } from './ai.js';
-import {
-  applyCursedOnSwap,
-  processPostHit,
-  runTimedEffects,
-  runEachHitEffects,
-  effParam,
-  abilityHasTag,
-} from './abilities.js';
+import { processPostHit, runTimedEffects, runEachHitEffects } from './abilities.js';
 import { spawnFloat, shakeStage, playLunge, playRecoil } from '../ui/animations.js';
 import { render } from '../ui/render.js';
-import { drainBeats, snapBeats, useLine, hitLine, flavorLine, eventText } from './log.js';
+import { drainBeats } from './log.js';
 
 const lower = (s) => String(s || '');
-const D = (...args) => {}; // debug noop
-
-// ─── helpers ─────────────────────────────────────────────────────────
-
-function relicAny(field) {
-  return state.relics && state.relics.some(r => r && r[field]);
-}
-
-// Fighter-to-side resolver.
-function sideOf(f) {
-  if (f === state.pf) return 'player';
-  if (f === state.ef) return 'enemy';
-  if (f === state.bf) return 'player';
-  if (f === state.ebf) return 'enemy';
-  return null;
-}
-function activeOnSide(side) { return side === 'player' ? state.pf : state.ef; }
-function benchOnSide(side)  { return side === 'player' ? state.bf : state.ebf; }
 
 function partyName(f) { return lower(displayName(f.creature)); }
 
@@ -74,9 +38,7 @@ export function beginBattle() {
   if (state.ebf) state.ebf.onBench = true;
   state.enemy = state.enemyParty[0];
 
-  applyBattleStartPassives(state.pf, state.ef);
-  if (state.bf)  applyBattleStartPassives(state.bf,  state.ef);
-  if (state.ebf) applyBattleStartPassives(state.ebf, state.pf);
+  applyBattleStartCascade();
   applyRelicBattleStart();
 
   state.gameLog = [];
@@ -85,20 +47,21 @@ export function beginBattle() {
   state.acting = false;
   state.turnPhase = 'idle';
   state.enemyIntent = null;
+  state.usedRevive = false;
 
   pushGame('— battle begins —', { cls: 'sys' });
-  pushLore(`They are at the door. ${state.enemyParty.map(e => lower(displayName(e))).join(' and ')}.`);
 
   state.screen = 'battle';
   render();
-  // Kick off round 1.
   startRound();
 }
 
-function applyBattleStartPassives(pf, ef) {
-  const cbs = { applyStatus, applyHeal, spawnFloat, pushGame, pushLore, displayName, cleanseStatuses };
-  applyBattleStartPassive(pf, ef, cbs);
-  applyBattleStartPassive(ef, pf, cbs);
+function applyBattleStartCascade() {
+  const cbs = { applyStatus, applyHeal, spawnFloat, pushGame, displayName, cleanseStatuses };
+  applyBattleStartPassive(state.pf,  state.ef, cbs);
+  applyBattleStartPassive(state.ef,  state.pf, cbs);
+  if (state.bf)  applyBattleStartPassive(state.bf,  state.ef, cbs);
+  if (state.ebf) applyBattleStartPassive(state.ebf, state.pf, cbs);
 }
 
 function applyRelicBattleStart() {
@@ -108,11 +71,14 @@ function applyRelicBattleStart() {
       applyStatus(state.ef, r.startStatusEnemy, {});
       pushGame(`Note · ${r.name} → enemy ${prettyStatus(r.startStatusEnemy)}.`, { cls: 'sys' });
     }
+    if (r.startCharge && state.pf) {
+      state.pf.charge = Math.min(3, (state.pf.charge || 0) + r.startCharge);
+    }
   }
 }
 
 function prettyStatus(k) {
-  return ({ burn: 'Fevering', bloom: 'Mending', soaking: 'Drained', cursed: 'Broken', dazed: 'Sedated' })[k] || k;
+  return ({ burn: 'Fevering', brittle: 'Brittle', drained: 'Drained', stun: 'Stunned' })[k] || k;
 }
 
 // ─── round flow ──────────────────────────────────────────────────────
@@ -122,22 +88,21 @@ async function startRound() {
   state.acting = true;
   state.turnPhase = 'tick';
   state.turnsTakenThisRound = 0;
-  // Apply tick statuses (start-of-round): burn/bloom hp ticks, healing-over-time progress
+
   await tickStartOfRound(state.pf, 'player');
   if (state.ef && state.ef.hp > 0) await tickStartOfRound(state.ef, 'enemy');
-  // Bench statuses (silent)
   if (state.bf  && state.bf.hp  > 0) await tickFighterStatuses(state.bf,  'player', true);
   if (state.ebf && state.ebf.hp > 0) await tickFighterStatuses(state.ebf, 'enemy', true);
-  // Bench tick relics
   applyBenchTickRelics();
-  // Round_start passives
-  const cbs = { applyHeal, applyStatus, cleanseStatuses, spawnFloat, pushGame, pushLore, displayName };
+
+  const cbs = { applyHeal, applyStatus, cleanseStatuses, spawnFloat, pushGame, displayName };
   applyRoundStartPassives(state.pf, 'player', cbs);
   applyRoundStartPassives(state.ef, 'enemy', cbs);
-  // Refresh energy + actions
-  resetTurn(state.pf);
-  resetTurn(state.ef);
-  // Decide who goes first this round
+
+  resetTurn(state.pf, true);
+  resetTurn(state.ef, false);
+
+  // Speed decides first.
   const pSpd = effectiveStat(state.pf, 'spd');
   const eSpd = effectiveStat(state.ef, 'spd');
   let pFirst;
@@ -146,27 +111,33 @@ async function startRound() {
   else if (winsTies(state.ef)) pFirst = false;
   else pFirst = Math.random() < 0.5;
   state.firstThisRound = pFirst ? 'player' : 'enemy';
-  // Plan enemy intent for this round
+
   state.enemyIntent = aiPlanIntent(state.ef, state.pf);
 
-  pushGame(`Round ${state.round} · ${pFirst ? 'you go first' : 'they go first'}.`, { cls: 'sys' });
+  pushGame(`Round ${state.round} · ${pFirst ? 'you act first' : 'they act first'}.`, { cls: 'sys' });
   await drainBeats();
 
-  // Check for faints from start-of-round damage (e.g. burn lethal)
   if (await handleFaintsIfAny()) {
-    // proceed to whoever's first
     state.acting = false;
-    if (state.firstThisRound === 'player') state.turnPhase = 'player';
-    else                                   { await runEnemyTurn(); await afterEnemyOrPlayerTurn('enemy'); }
+    if (state.firstThisRound === 'player') {
+      state.turnPhase = 'player';
+    } else {
+      await runEnemyTurn();
+      await afterEnemyOrPlayerTurn('enemy');
+    }
     render();
   } else {
     render();
   }
 }
 
-function resetTurn(f) {
+function resetTurn(f, isPlayer) {
   if (!f) return;
-  f.energy = f.maxEnergy;
+  let bonus = 0;
+  if (isPlayer && state.round === 1 && state.relics) {
+    for (const r of state.relics) if (r.energyBonus) bonus += r.energyBonus;
+  }
+  f.energy = f.maxEnergy + bonus;
   f.actionsThisTurn = 0;
 }
 
@@ -177,25 +148,15 @@ function applyBenchTickRelics() {
       const amt = Math.round(state.bf.creature.maxHp * r.benchTickHeal);
       const healed = applyHeal(state.bf, amt);
       if (healed > 0) {
-        pushGame(`Bench · ${displayName(state.bf.creature)} +${healed} hp from ${r.name}.`, { cls: 'fade' });
+        pushGame(`Bench · ${displayName(state.bf.creature)} +${healed} hp.`, { cls: 'fade' });
       }
     }
   }
 }
 
-// Called after either side ends their turn. Decides whether to kick off the
-// other side's turn or end the round.
 async function afterEnemyOrPlayerTurn(side) {
   if (!await handleFaintsIfAny()) return;
-  // If the other side hasn't gone yet this round, run them.
   const otherSide = side === 'player' ? 'enemy' : 'player';
-  const wentFirst = state.firstThisRound;
-  if (otherSide === wentFirst) {
-    // Other side hasn't gone yet this round (we're the 2nd player to go).
-    // If we're second already, end round.
-  }
-  // Logic: if 'side' just finished and the other side hasn't gone yet, kick off other.
-  // Track via tail: state.turnsTakenThisRound
   state.turnsTakenThisRound = (state.turnsTakenThisRound || 0) + 1;
   if (state.turnsTakenThisRound < 2) {
     if (otherSide === 'player') {
@@ -207,20 +168,17 @@ async function afterEnemyOrPlayerTurn(side) {
       await afterEnemyOrPlayerTurn('enemy');
     }
   } else {
-    // Both sides went; end round, check victory, start next.
     state.turnsTakenThisRound = 0;
     await endRoundCleanup();
     if (await handleFaintsIfAny()) {
-      // Continue next round
       if (state.screen === 'battle') startRound();
     }
   }
 }
 
 async function endRoundCleanup() {
-  // Tick timed buffs (decrement) and any other end-of-round bookkeeping
   tickTimedBuffs(state.pf);
-  if (state.ef) tickTimedBuffs(state.ef);
+  if (state.ef)  tickTimedBuffs(state.ef);
   if (state.bf)  tickTimedBuffs(state.bf);
   if (state.ebf) tickTimedBuffs(state.ebf);
 }
@@ -249,12 +207,8 @@ export async function playerAct(abilityKey) {
   state.pf.energy -= cost;
   await runAction('player', state.pf, state.ef, a);
   state.acting = false;
-  // If fainted, handled by handleFaintsIfAny inside runAction's chain.
   if (!await handleFaintsIfAny()) return;
-  // Auto-end turn if energy drained
-  if (state.pf.energy <= 0) {
-    return playerEndTurn();
-  }
+  if (state.pf.energy <= 0) return playerEndTurn();
   render();
 }
 
@@ -269,7 +223,6 @@ export async function playerEndTurn() {
 export async function playerSwap() {
   if (state.turnPhase !== 'player' || state.acting) return;
   if (!state.bf || state.bf.hp <= 0) return;
-  // Swap is treated as a 1-cost action.
   if (state.pf.energy < 1) return;
   state.acting = true;
   state.pf.energy -= 1;
@@ -286,8 +239,6 @@ async function runEnemyTurn() {
   state.turnPhase = 'enemy';
   state.acting = true;
   render();
-  // Loop: AI picks an action that fits in remaining energy, plays it.
-  // If AI returns null, end turn.
   let safety = 8;
   while (state.ef && state.ef.hp > 0 && state.ef.energy > 0 && safety-- > 0) {
     const choice = aiChoose(state.ef, state.pf);
@@ -323,36 +274,35 @@ async function runAction(side, attacker, defender, ability) {
   const helpers = { performSelfSwap, doSwap };
   attacker.actionsThisTurn = (attacker.actionsThisTurn || 0) + 1;
 
-  // Compose the use line for game log + lore.
   const actorName = partyName(attacker);
   const cost = abilityCost(ability, attacker);
   pushGame(`${cap(actorName)} · ${ability.name} (${cost}E)`, {
-    cls: 'act',
-    actor: side,
+    cls: 'act', actor: side,
     anim: () => playLunge(side),
   });
-  // Lore line for this action
-  const flavor = flavorLine(attacker, ability);
-  if (flavor) pushLore(flavor);
+  if (ability.flavor) {
+    const flav = String(ability.flavor).replace(/^\s+|\s+$/g, '');
+    pushLore(flav);
+  }
   await drainBeats();
 
-  // Run before-timed effects
   await runTimedEffects('before', phase, { side, oside, attacker, defender, helpers, lastDmg: 0 });
   await drainBeats();
 
-  // Dazed check (only on damage abilities)
+  // Stun check on damage abilities.
   const hasDamage = phase.some(e => e.type === 'damage');
-  if (hasDamage && attacker.statuses && attacker.statuses.dazed && Math.random() < (attacker.statuses.dazed.skipChance ?? 0.35)) {
-    pushGame(`${cap(actorName)} can't focus — Sedated.`, { cls: 'eff' });
+  if (hasDamage && attacker.statuses && attacker.statuses.stun && Math.random() < (attacker.statuses.stun.skipChance ?? 0.5)) {
+    pushGame(`${cap(actorName)} can't act — Stunned.`, { cls: 'eff' });
+    attacker.statuses.stun = null;
     await drainBeats();
     return;
   }
 
-  // Damage effects
+  // Damage phase.
   const dmgEffects = phase.filter(e => e.type === 'damage');
   for (const dmgEff of dmgEffects) {
-    const targetKeys = effParam(dmgEff, 'targets') || ['enemy'];
-    const hits = effParam(dmgEff, 'hits') || 1;
+    const targetKeys = dmgEff.targets || ['enemy'];
+    const hits = dmgEff.hits || 1;
     for (const tk of targetKeys) {
       const fighters = resolveTargetsForDamage(tk, side, attacker, defender);
       const targetSide = (tk === 'self' || tk === 'bench') ? side : oside;
@@ -361,19 +311,18 @@ async function runAction(side, attacker, defender, ability) {
           if (target.hp <= 0 || attacker.hp <= 0) break;
           const result = calculateDamage(attacker, target, ability, dmgEff, phase);
           if (result.evaded) {
-            pushGame(`${cap(partyName(target))} evades.`, { cls: 'eff', anim: () => spawnFloat(targetSide, 'evade', 'heal') });
+            pushGame(`${cap(partyName(target))} evades.`, { cls: 'eff' });
             await drainBeats();
             continue;
           }
           target.hp = Math.max(0, target.hp - result.dmg);
           const tag = result.crit ? ' ✶ crit'
-                    : result.mult > 1 ? ' ✶ super'
+                    : result.mult > 1 ? ' ✶ effective'
                     : result.mult < 1 ? ' (resisted)'
                     : '';
           pushGame(`${cap(partyName(target))}${tag}`, {
             cls: result.crit ? 'crit' : (result.mult !== 1 ? 'eff' : 'hit'),
-            damage: result.dmg,
-            actor: side,
+            damage: result.dmg, actor: side,
             anim: () => {
               spawnFloat(targetSide, String(result.dmg), result.crit ? 'crit' : 'dmg');
               if (result.crit) sfx('crit'); else sfx('hit');
@@ -391,9 +340,13 @@ async function runAction(side, attacker, defender, ability) {
     }
   }
 
-  // After-timed effects (apply_status, swap, etc.)
   await runTimedEffects('after', phase, { side, oside, attacker, defender, helpers, lastDmg: 0 });
   await drainBeats();
+}
+
+// Local import: pushLore (replaces only the single lore line).
+function pushLore(text) {
+  state.loreLine = { text: String(text || ''), cls: '', id: ++state.loreTypingId };
 }
 
 function resolveTargetsForDamage(targetKey, side, attacker, defender) {
@@ -426,7 +379,6 @@ async function doSwap(side, swapEff) {
     return;
   }
   const out = side === 'player' ? state.pf : state.ef;
-  applyCursedOnSwap(out, side);
   pushGame(`${cap(partyName(out))} steps back. ${cap(partyName(benchFighter))} forward.`, { cls: 'eff', anim: () => sfx('select') });
   await drainBeats();
   if (side === 'player') {
@@ -440,7 +392,6 @@ async function doSwap(side, swapEff) {
   out.onBench = true;
   const incoming = side === 'player' ? state.pf : state.ef;
   incoming.onBench = false;
-  // Apply swap effect modifiers (buffOnSwap, healOnSwap)
   if (swapEff) {
     if (swapEff.buffOnSwap) {
       for (const [k, v] of Object.entries(swapEff.buffOnSwap)) {
@@ -453,7 +404,7 @@ async function doSwap(side, swapEff) {
       if (healed > 0) pushGame(`${cap(partyName(incoming))} +${healed}`, { heal: healed, cls: 'heal' });
     }
   }
-  applySwapInPassives(incoming, out, side, { applyHeal, cleanseStatuses, spawnFloat, pushGame, pushLore, displayName });
+  applySwapInPassives(incoming, out, side, { applyHeal, cleanseStatuses, spawnFloat, pushGame, displayName });
   await drainBeats();
 }
 
@@ -470,12 +421,10 @@ function tryRevive() {
   target.hp = Math.max(1, Math.round(target.creature.maxHp * reviver.reviveOnce));
   state.usedRevive = true;
   pushGame(`${reviver.name} · ${cap(partyName(target))} stands again.`, { cls: 'sys', heal: target.hp });
-  pushLore('The letter is opened. ~~A signature I do not recognize.~~');
   return true;
 }
 
 export async function handleFaintsIfAny() {
-  // Player active fainted
   if (state.pf.hp <= 0) {
     pushGame(`${cap(partyName(state.pf))} falls.`, { cls: 'eff', anim: () => sfx('faint') });
     await drainBeats();
@@ -495,7 +444,6 @@ export async function handleFaintsIfAny() {
       return false;
     }
   }
-  // Enemy active fainted
   if (state.ef.hp <= 0) {
     pushGame(`${cap(partyName(state.ef))} falls.`, { cls: 'eff', anim: () => sfx('faint') });
     await drainBeats();
@@ -526,8 +474,8 @@ export function finishBattleIfDone() {
     return;
   }
   const totalEnemyLevel = state.enemyParty.reduce((sum, e) => sum + e.level, 0);
-  const eliteMult = state.isEliteBattle ? 1.5 : 1.0;
-  let xpGained = Math.round((totalEnemyLevel * 5 + 18) * eliteMult);
+  const eliteMult = state.isEliteBattle ? 1.4 : 1.0;
+  let xpGained = Math.round((totalEnemyLevel * 6 + 18) * eliteMult);
   if (state.relics && state.relics.length) {
     for (const r of state.relics) if (r.capturedBonusXp) xpGained = Math.round(xpGained * (1 + r.capturedBonusXp));
   }

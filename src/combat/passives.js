@@ -1,6 +1,6 @@
 // Passive engine. Handles all passive triggers + relic damage hooks.
 
-import { PASSIVES, ADDITIONAL_EFFECTS } from '../data.js';
+import { PASSIVES } from '../data.js';
 import { state } from '../state.js';
 
 export function hasPassive(f, key) {
@@ -49,18 +49,17 @@ function evalCondition(key, spec, ctx) {
   switch (key) {
     case 'selfHpFrac':           return cmpNumber(ctx.self ? ctx.self.hp / ctx.self.creature.maxHp : 0, spec);
     case 'targetHpFrac':         return ctx.target ? cmpNumber(ctx.target.hp / ctx.target.creature.maxHp, spec) : false;
-    case 'dmgFrac':              return cmpNumber((ctx.dmg || 0) / (ctx.dmgRefMaxHp || 1), spec);
     case 'firstAttack':          return Boolean((ctx.self && (ctx.self.attacksMade || 0) === 0)) === Boolean(spec);
     case 'firstAttackThisRound': return Boolean(ctx.self && (ctx.self.actionsThisTurn || 0) <= 1) === Boolean(spec);
     case 'isCrit':               return Boolean(ctx.isCrit) === Boolean(spec);
     case 'selfFasterThanTarget': return Boolean(ctx.selfFaster) === Boolean(spec);
-    case 'bracing':              return Boolean(ctx.self && ctx.self.bracingThisTurn) === Boolean(spec);
     case 'onBench':              return Boolean(ctx.self && ctx.self.onBench) === Boolean(spec);
     case 'attackElement':        return ctx.attackElement === spec;
     case 'queryStat':            return ctx.queryStat === spec;
     case 'targetHasStatus':      return Boolean(ctx.target && ctx.target.statuses && ctx.target.statuses[spec]);
     case 'selfHasStatus':        return Boolean(ctx.self && ctx.self.statuses && ctx.self.statuses[spec]);
     case 'abilityHasTag':        return Boolean(ctx.ability && ctx.ability.tags && ctx.ability.tags.includes(spec));
+    case 'round':                return cmpNumber(ctx.round || 0, spec);
   }
   return true;
 }
@@ -83,95 +82,6 @@ function consumeIfNeeded(f, item) {
   if (item.entry.consumesOn === 'battle') markConsumed(f, item.passiveKey, item.idx);
 }
 
-// ─── Custom impls (signatures + edge cases) ──────────────────────────
-
-const CUSTOM = {
-  lightbearerTick(_eff, ctx) {
-    const f = ctx.self;
-    if (!f.creature.signature || f.creature.signature.key !== 'light') return;
-    const max = f.creature.signature.max ?? 5;
-    const before = f.sigStacks || 0;
-    f.sigStacks = Math.min(max, before + 1);
-    if (ctx.cbs && ctx.cbs.pushGame && f.sigStacks > before) {
-      ctx.cbs.pushGame(`${cap(name(f))} · +1 Light (${f.sigStacks}/${max}).`, { cls: 'fade' });
-    }
-  },
-  vanguardEnergy(_eff, ctx) {
-    const f = ctx.self;
-    f.energy = Math.min((f.maxEnergy ?? 3) + 1, (f.energy ?? 0) + 1);
-  },
-  heatkeeperGain(_eff, ctx) {
-    const f = ctx.self;
-    if (!f.creature.signature || f.creature.signature.key !== 'heat') return;
-    const max = f.creature.signature.max ?? 5;
-    const before = f.sigStacks || 0;
-    f.sigStacks = Math.min(max, before + 1);
-    if (ctx.cbs && ctx.cbs.pushGame && f.sigStacks > before) {
-      ctx.cbs.pushGame(`${cap(name(f))} · +1 Heat (${f.sigStacks}/${max}).`, { cls: 'fade' });
-    }
-  },
-  tideturnFlip(_eff, ctx) {
-    const f = ctx.self;
-    if (!f.creature.signature || f.creature.signature.key !== 'tide') return;
-    f.sigStacks = (f.sigStacks || 0) >= 1 ? 0 : 1;
-    if (ctx.cbs && ctx.cbs.pushGame) {
-      ctx.cbs.pushGame(`${cap(name(f))} · Tide ${f.sigStacks ? 'High' : 'Low'}.`, { cls: 'fade' });
-    }
-  },
-  rootsTick(_eff, ctx) {
-    const f = ctx.self;
-    if (!f.creature.signature || f.creature.signature.key !== 'roots') return;
-    const max = f.creature.signature.max ?? 5;
-    const before = f.sigStacks || 0;
-    f.sigStacks = Math.min(max, before + 1);
-    if (ctx.cbs && ctx.cbs.pushGame && f.sigStacks > before) {
-      ctx.cbs.pushGame(`${cap(name(f))} · +1 Roots (${f.sigStacks}/${max}).`, { cls: 'fade' });
-    }
-  },
-  rootsDefBonus(_eff, ctx) {
-    if (ctx.queryStat !== 'def') return;
-    const f = ctx.self;
-    if (!f.creature.signature || f.creature.signature.key !== 'roots') return;
-    ctx.outMult *= 1 + 0.05 * (f.sigStacks || 0);
-  },
-  consumerMark(_eff, ctx) {
-    const t = ctx.target;
-    if (!t || t.hp <= 0) return;
-    t.marks = Math.min(4, (t.marks || 0) + 1);
-  },
-  frostbiteGain(_eff, ctx) {
-    const f = ctx.self;
-    if (!f.creature.signature || f.creature.signature.key !== 'frost') return;
-    const max = f.creature.signature.max ?? 5;
-    const before = f.sigStacks || 0;
-    f.sigStacks = Math.min(max, before + 1);
-  },
-  slowBurnTick(_eff, ctx) {
-    const f = ctx.self;
-    if (!f.creature.signature || f.creature.signature.key !== 'embers') return;
-    const max = f.creature.signature.max ?? 5;
-    f.sigStacks = Math.min(max, (f.sigStacks || 0) + 1);
-  },
-  zealotCheck(_eff, ctx) {
-    const f = ctx.self;
-    f.zealotPrimed = (f.lastRoundEnergy || 0) >= 3;
-    f.lastRoundEnergy = 0;
-  },
-  zealotApply(_eff, ctx) {
-    if (ctx.self && ctx.self.zealotPrimed) {
-      ctx.outPower *= 1.3;
-    }
-  },
-};
-
-function name(f) { return f && f.creature ? (f.creature.customName || f.creature.species) : '?'; }
-function cap(s) { return String(s || '').replace(/^./, c => c.toUpperCase()); }
-
-function runCustom(impl, ctx) {
-  const fn = CUSTOM[impl];
-  if (fn) fn(ctx.entry?.effect || {}, ctx);
-}
-
 // ─── Effect dispatcher ───────────────────────────────────────────────
 
 function runEffect(eff, ctx) {
@@ -180,32 +90,23 @@ function runEffect(eff, ctx) {
     case 'stat_mult':
       if (eff.stat === ctx.queryStat) ctx.outMult *= (eff.value ?? 1);
       return;
-    case 'all_stat_mult':
-      ctx.outMult *= (eff.value ?? 1);
-      return;
     case 'power_mult':
       ctx.outPower *= (eff.value ?? 1);
       return;
     case 'flat_dmg_reduction':
       ctx.outRaw -= (eff.value || 0);
       return;
-    case 'non_elem_dmg_mult':
-      if (!ctx.attackElement) ctx.outRaw *= (eff.value ?? 1);
+    case 'incoming_mult':
+      ctx.outRaw *= (eff.value ?? 1);
       return;
     case 'crit_chance_set':
-      ctx.outCritChance = eff.value ?? ctx.outCritChance;
+      ctx.outCritChance = Math.max(ctx.outCritChance || 0, eff.value ?? ctx.outCritChance);
       return;
-    case 'crit_mult':
-      ctx.outCritMult = eff.value ?? ctx.outCritMult;
-      return;
-    case 'evasion_chance':
-      ctx.outEvadeChance = Math.max(ctx.outEvadeChance || 0, eff.value || 0);
+    case 'crit_mult_add':
+      ctx.outCritMult = (ctx.outCritMult || 1.7) + (eff.value || 0);
       return;
     case 'heal_mult':
       ctx.outHealMult *= (eff.value ?? 1);
-      return;
-    case 'block_heal':
-      ctx.outBlockHeal = true;
       return;
     case 'block_statuses':
       if ((eff.statuses || []).includes(ctx.statusType)) ctx.outBlocked = true;
@@ -217,7 +118,6 @@ function runEffect(eff, ctx) {
       ctx.outDiscount = Math.max(ctx.outDiscount || 0, eff.value || 0);
       return;
 
-    // Side-effecting actions (used by various trigger callbacks)
     case 'heal_self': {
       const f = ctx.self;
       const amt = Math.max(1, Math.round(f.creature.maxHp * (eff.percent || 0)));
@@ -235,21 +135,6 @@ function runEffect(eff, ctx) {
       }
       return;
     }
-    case 'damage_target': {
-      if (!ctx.target) return;
-      const dmg = Math.max(1, Math.round(ctx.target.creature.maxHp * (eff.percent || 0)));
-      ctx.target.hp = Math.max(1, ctx.target.hp - dmg);
-      if (cbs.pushGame) cbs.pushGame(`${cap(name(ctx.target))} takes -${dmg} from ${ctx.passive ? ctx.passive.name : 'effect'}.`, { damage: dmg, cls: 'eff' });
-      return;
-    }
-    case 'reflect_damage': {
-      if (!ctx.target || ctx.target.hp <= 0) return;
-      const back = Math.round((ctx.dmg || 0) * (eff.percent || 0));
-      if (back <= 0) return;
-      ctx.target.hp = Math.max(0, ctx.target.hp - back);
-      if (cbs.pushGame) cbs.pushGame(`${cap(name(ctx.target))} · ${ctx.passive ? ctx.passive.name : 'reflect'} -${back}.`, { damage: back, cls: 'eff' });
-      return;
-    }
     case 'apply_status': {
       const target = eff.target === 'self' ? ctx.self : ctx.target;
       if (!target || target.hp <= 0) return;
@@ -257,8 +142,8 @@ function runEffect(eff, ctx) {
       if (chance < 1 && Math.random() >= chance) return;
       if (cbs.applyStatus && cbs.applyStatus(target, eff.status, {})) {
         if (cbs.pushGame) {
-          const sName = ({ burn: 'Fevering', bloom: 'Mending', soaking: 'Drained', cursed: 'Broken', dazed: 'Sedated' })[eff.status] || eff.status;
-          cbs.pushGame(`${cap(name(target))} · ${sName} (from ${ctx.passive ? ctx.passive.name : 'passive'}).`, { cls: 'eff' });
+          const sName = ({ burn: 'Fevering', brittle: 'Brittle', drained: 'Drained', stun: 'Stunned' })[eff.status] || eff.status;
+          cbs.pushGame(`${cap(name(target))} · ${sName} (${ctx.passive ? ctx.passive.name : 'passive'}).`, { cls: 'eff' });
         }
       }
       return;
@@ -278,29 +163,37 @@ function runEffect(eff, ctx) {
       }
       return;
     }
-    case 'cleanse_target': {
-      if (!ctx.incoming) return;
-      if (cbs.cleanseStatuses) cbs.cleanseStatuses(ctx.incoming);
-      if (cbs.pushGame) cbs.pushGame(`${cap(name(ctx.incoming))} · cleansed (${ctx.passive ? ctx.passive.name : 'tag-out'}).`, { cls: 'eff' });
+    case 'grant_charge': {
+      const f = ctx.self;
+      const amount = eff.amount ?? 1;
+      const before = f.charge || 0;
+      f.charge = Math.min(3, before + amount);
+      if (cbs.pushGame && f.charge > before) {
+        cbs.pushGame(`${cap(name(f))} · +${f.charge - before} Charge (${ctx.passive ? ctx.passive.name : ''}).`, { cls: 'eff' });
+      }
       return;
     }
     case 'cleanse_self_step': {
       const f = ctx.self;
-      const step = eff.step || 0.15;
-      if (f.statuses && f.statuses.soaking)      f.statuses.soaking = null;
-      else if (f.statuses && f.statuses.burn)    f.statuses.burn = null;
-      else if (f.statuses && f.statuses.dazed)   f.statuses.dazed = null;
-      else if (f.statuses && f.statuses.cursed)  f.statuses.cursed = null;
-      else if (f.statMods.atk < 0)               f.statMods.atk = Math.min(0, f.statMods.atk + step);
-      else if (f.statMods.def < 0)               f.statMods.def = Math.min(0, f.statMods.def + step);
-      else if (f.statMods.spd < 0)               f.statMods.spd = Math.min(0, f.statMods.spd + step);
+      if (f.statuses) {
+        if      (f.statuses.brittle) f.statuses.brittle = null;
+        else if (f.statuses.drained) f.statuses.drained = null;
+        else if (f.statuses.burn)    f.statuses.burn = null;
+        else if (f.statuses.stun)    f.statuses.stun = null;
+      }
       return;
     }
-    case 'custom':
-      runCustom(eff.impl, ctx);
+    case 'cleanse_target': {
+      if (!ctx.incoming || !cbs.cleanseStatuses) return;
+      cbs.cleanseStatuses(ctx.incoming);
+      if (cbs.pushGame) cbs.pushGame(`${cap(name(ctx.incoming))} · cleansed.`, { cls: 'eff' });
       return;
+    }
   }
 }
+
+function name(f) { return f && f.creature ? (f.creature.customName || f.creature.species) : '?'; }
+function cap(s) { return String(s || '').replace(/^./, c => c.toUpperCase()); }
 
 function fire(f, triggerName, ctx) {
   ctx.self = ctx.self || f;
@@ -323,34 +216,27 @@ export function applyStatMult(f, stat, m) {
 
 export function applyPowerMult(attacker, defender, ability, power, phase, { attackerSpd = 0, defenderSpd = 0 } = {}) {
   const ctx = {
-    self: attacker, target: defender,
+    self: attacker, target: defender, ability,
     attackElement: ability.element || null,
     selfFaster: attackerSpd > defenderSpd,
     outPower: power,
   };
   fire(attacker, 'power_query', ctx);
-  // Phase-level damage modifiers (execute_scale, status_synergy)
   const exec = (phase || []).find(e => e.type === 'execute_scale');
   if (exec) {
     const sa = exec.scaleAmount ?? 0.5;
     ctx.outPower *= 1 + sa * (1 - (defender.hp / defender.creature.maxHp));
   }
-  const syn = (phase || []).find(e => e.type === 'status_synergy');
-  if (syn && defender.statuses) {
-    const status = syn.status ?? 'cursed';
-    const mult   = syn.powerMult ?? 1.5;
-    if (defender.statuses[status]) ctx.outPower *= mult;
-  }
   return ctx.outPower;
 }
 
-export function applyFlatDmgReduction(defender, raw, attackElement = null) {
-  const ctx = { self: defender, attackElement, outRaw: raw };
+// Apply all defense_query passives (flat reduction, incoming multipliers)
+// AND relic takeMult in one pass. Called once per damage calculation.
+export function applyDefenseModifiers(defender, raw, attackElement, round) {
+  const ctx = { self: defender, attackElement, outRaw: raw, round };
   fire(defender, 'defense_query', ctx);
   if (state.relics && state.relics.length) {
-    let m = 1;
-    for (const r of state.relics) if (r.takeMult) m *= r.takeMult;
-    ctx.outRaw *= m;
+    for (const r of state.relics) if (r.takeMult) ctx.outRaw *= r.takeMult;
   }
   return ctx.outRaw;
 }
@@ -377,22 +263,17 @@ export function checkEvasion(defender) {
   if (state.relics && state.relics.length) {
     for (const r of state.relics) if (r.evadeBonus) baseEvade = Math.max(baseEvade, r.evadeBonus);
   }
-  const ctx = { self: defender, outEvadeChance: baseEvade };
-  fire(defender, 'evasion_query', ctx);
-  return ctx.outEvadeChance > 0 && Math.random() < ctx.outEvadeChance;
+  return baseEvade > 0 && Math.random() < baseEvade;
 }
 
 export function modifyHeal(f, baseAmount) {
-  const ctx = { self: f, outHealMult: 1, outHealCapMult: 1, outBlockHeal: false };
+  const ctx = { self: f, outHealMult: 1, outBlockHeal: false };
   fire(f, 'heal_query', ctx);
   if (state.relics && state.relics.length) {
     for (const r of state.relics) if (r.healMult) ctx.outHealMult *= r.healMult;
   }
   if (ctx.outBlockHeal) return { amount: 0, cap: f.creature.maxHp };
-  return {
-    amount: Math.round(baseAmount * ctx.outHealMult),
-    cap: Math.round(f.creature.maxHp * ctx.outHealCapMult),
-  };
+  return { amount: Math.round(baseAmount * ctx.outHealMult), cap: f.creature.maxHp };
 }
 
 export function blocksStatus(f, statusType) {
@@ -403,26 +284,12 @@ export function blocksStatus(f, statusType) {
 
 export function bypassesTypeChart(_attacker) { return false; }
 
-export function applySelfDmgMult(f, raw) {
-  const ctx = { self: f, outMult: 1 };
-  fire(f, 'self_damage_query', ctx);
-  if (state.relics && state.relics.length) {
-    for (const r of state.relics) if (r.selfDmgMult) ctx.outMult *= r.selfDmgMult;
-  }
-  return raw * ctx.outMult;
-}
-
 export function winsTies(f) {
   const ctx = { self: f, outWin: false };
   fire(f, 'tie_break', ctx);
   return ctx.outWin;
 }
 
-export function hasFirstAttackThisRound(f) {
-  return f && (f.actionsThisTurn || 0) === 0;
-}
-
-// Energy discount from passives like Featherweight (swap moves cost 0).
 export function energyDiscount(f, ability) {
   const ctx = { self: f, ability, outDiscount: 0 };
   fire(f, 'energy_cost', ctx);
@@ -454,10 +321,6 @@ export function applyPostHitPassives(side, oside, attacker, defender, result, cb
       side: oside, oside: side, cbs,
     });
   }
-}
-
-export function applyTurnStartPassives(f, side, cbs) {
-  fire(f, 'turn_start', { self: f, side, cbs });
 }
 
 export function applyBenchPassives(f, isBench, cbs) {

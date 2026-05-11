@@ -8,12 +8,14 @@ export function partyAvgLevel(roster) {
   return Math.round(roster.reduce((a, c) => a + c.level, 0) / roster.length);
 }
 
-// Standard non-elite enemy.
+// Standard non-elite enemy. Wave 1 is strictly party-level (no variance) to
+// give the tutorial fight a clean baseline. Later waves get ± variance.
 export function generateEnemy(wave, partyLevel) {
   const speciesName = pick(ALL_ENCOUNTER_SPECIES);
   const t = TEMPLATES.find(x => x.species === speciesName) || TEMPLATES[0];
   const baseLvl = partyLevel + Math.floor((wave - 1) / 3);
-  const lvl = Math.max(1, Math.min(MAX_LEVEL, baseLvl + randi(-1, 1)));
+  const variance = wave <= 1 ? 0 : randi(-1, 1);
+  const lvl = Math.max(1, Math.min(MAX_LEVEL, baseLvl + variance));
   const c = makeCreature(t, lvl);
   return c;
 }
