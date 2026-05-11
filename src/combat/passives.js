@@ -83,96 +83,14 @@ function consumeIfNeeded(f, item) {
   if (item.entry.consumesOn === 'battle') markConsumed(f, item.passiveKey, item.idx);
 }
 
-// ─── Custom impls (signatures + edge cases) ──────────────────────────
-
 const CUSTOM = {
-  lightbearerTick(_eff, ctx) {
-    const f = ctx.self;
-    if (!f.creature.signature || f.creature.signature.key !== 'light') return;
-    const max = f.creature.signature.max ?? 5;
-    const before = f.sigStacks || 0;
-    f.sigStacks = Math.min(max, before + 1);
-    if (ctx.cbs && ctx.cbs.pushGame && f.sigStacks > before) {
-      ctx.cbs.pushGame(`${cap(name(f))} · +1 Light (${f.sigStacks}/${max}).`, { cls: 'fade' });
-    }
-  },
-  vanguardEnergy(_eff, ctx) {
-    const f = ctx.self;
-    f.energy = Math.min((f.maxEnergy ?? 3) + 1, (f.energy ?? 0) + 1);
-  },
-  heatkeeperGain(_eff, ctx) {
-    const f = ctx.self;
-    if (!f.creature.signature || f.creature.signature.key !== 'heat') return;
-    const max = f.creature.signature.max ?? 5;
-    const before = f.sigStacks || 0;
-    f.sigStacks = Math.min(max, before + 1);
-    if (ctx.cbs && ctx.cbs.pushGame && f.sigStacks > before) {
-      ctx.cbs.pushGame(`${cap(name(f))} · +1 Heat (${f.sigStacks}/${max}).`, { cls: 'fade' });
-    }
-  },
-  tideturnFlip(_eff, ctx) {
-    const f = ctx.self;
-    if (!f.creature.signature || f.creature.signature.key !== 'tide') return;
-    f.sigStacks = (f.sigStacks || 0) >= 1 ? 0 : 1;
-    if (ctx.cbs && ctx.cbs.pushGame) {
-      ctx.cbs.pushGame(`${cap(name(f))} · Tide ${f.sigStacks ? 'High' : 'Low'}.`, { cls: 'fade' });
-    }
-  },
-  rootsTick(_eff, ctx) {
-    const f = ctx.self;
-    if (!f.creature.signature || f.creature.signature.key !== 'roots') return;
-    const max = f.creature.signature.max ?? 5;
-    const before = f.sigStacks || 0;
-    f.sigStacks = Math.min(max, before + 1);
-    if (ctx.cbs && ctx.cbs.pushGame && f.sigStacks > before) {
-      ctx.cbs.pushGame(`${cap(name(f))} · +1 Roots (${f.sigStacks}/${max}).`, { cls: 'fade' });
-    }
-  },
-  rootsDefBonus(_eff, ctx) {
-    if (ctx.queryStat !== 'def') return;
-    const f = ctx.self;
-    if (!f.creature.signature || f.creature.signature.key !== 'roots') return;
-    ctx.outMult *= 1 + 0.05 * (f.sigStacks || 0);
-  },
-  consumerMark(_eff, ctx) {
-    const t = ctx.target;
-    if (!t || t.hp <= 0) return;
-    t.marks = Math.min(4, (t.marks || 0) + 1);
-  },
-  frostbiteGain(_eff, ctx) {
-    const f = ctx.self;
-    if (!f.creature.signature || f.creature.signature.key !== 'frost') return;
-    const max = f.creature.signature.max ?? 5;
-    const before = f.sigStacks || 0;
-    f.sigStacks = Math.min(max, before + 1);
-  },
-  slowBurnTick(_eff, ctx) {
-    const f = ctx.self;
-    if (!f.creature.signature || f.creature.signature.key !== 'embers') return;
-    const max = f.creature.signature.max ?? 5;
-    f.sigStacks = Math.min(max, (f.sigStacks || 0) + 1);
-  },
-  zealotCheck(_eff, ctx) {
-    const f = ctx.self;
-    f.zealotPrimed = (f.lastRoundEnergy || 0) >= 3;
-    f.lastRoundEnergy = 0;
-  },
-  zealotApply(_eff, ctx) {
-    if (ctx.self && ctx.self.zealotPrimed) {
-      ctx.outPower *= 1.3;
-    }
-  },
+  // Reserved for archetype-specific custom impls. Most behavior is now data-driven.
 };
-
-function name(f) { return f && f.creature ? (f.creature.customName || f.creature.species) : '?'; }
-function cap(s) { return String(s || '').replace(/^./, c => c.toUpperCase()); }
 
 function runCustom(impl, ctx) {
   const fn = CUSTOM[impl];
   if (fn) fn(ctx.entry?.effect || {}, ctx);
 }
-
-// ─── Effect dispatcher ───────────────────────────────────────────────
 
 function runEffect(eff, ctx) {
   const cbs = ctx.cbs || {};
@@ -186,6 +104,12 @@ function runEffect(eff, ctx) {
     case 'power_mult':
       ctx.outPower *= (eff.value ?? 1);
       return;
+    case 'power_mult_per_status': {
+      if (!ctx.target || !ctx.target.statuses) return;
+      const count = ['burn','bloom','soaking','cursed','dazed'].filter(s => ctx.target.statuses[s]).length;
+      if (count > 0) ctx.outPower *= 1 + (eff.perStatus || 0) * count;
+      return;
+    }
     case 'flat_dmg_reduction':
       ctx.outRaw -= (eff.value || 0);
       return;
@@ -204,6 +128,9 @@ function runEffect(eff, ctx) {
     case 'heal_mult':
       ctx.outHealMult *= (eff.value ?? 1);
       return;
+    case 'overheal_cap':
+      ctx.outHealCapMult = Math.max(ctx.outHealCapMult || 1, eff.value || 1);
+      return;
     case 'block_heal':
       ctx.outBlockHeal = true;
       return;
@@ -217,7 +144,6 @@ function runEffect(eff, ctx) {
       ctx.outDiscount = Math.max(ctx.outDiscount || 0, eff.value || 0);
       return;
 
-    // Side-effecting actions (used by various trigger callbacks)
     case 'heal_self': {
       const f = ctx.self;
       const amt = Math.max(1, Math.round(f.creature.maxHp * (eff.percent || 0)));
@@ -233,13 +159,6 @@ function runEffect(eff, ctx) {
       if (healed > 0 && cbs.pushGame) {
         cbs.pushGame(`${cap(name(f))} drinks +${healed}.`, { heal: healed, cls: 'heal' });
       }
-      return;
-    }
-    case 'damage_target': {
-      if (!ctx.target) return;
-      const dmg = Math.max(1, Math.round(ctx.target.creature.maxHp * (eff.percent || 0)));
-      ctx.target.hp = Math.max(1, ctx.target.hp - dmg);
-      if (cbs.pushGame) cbs.pushGame(`${cap(name(ctx.target))} takes -${dmg} from ${ctx.passive ? ctx.passive.name : 'effect'}.`, { damage: dmg, cls: 'eff' });
       return;
     }
     case 'reflect_damage': {
@@ -278,6 +197,12 @@ function runEffect(eff, ctx) {
       }
       return;
     }
+    case 'buff_target': {
+      if (!ctx.target || ctx.target.hp <= 0) return;
+      const sm = eff.statMods || {};
+      for (const [k, v] of Object.entries(sm)) ctx.target.statMods[k] = (ctx.target.statMods[k] || 0) + v;
+      return;
+    }
     case 'cleanse_target': {
       if (!ctx.incoming) return;
       if (cbs.cleanseStatuses) cbs.cleanseStatuses(ctx.incoming);
@@ -302,6 +227,9 @@ function runEffect(eff, ctx) {
   }
 }
 
+function name(f) { return f && f.creature ? (f.creature.customName || f.creature.species) : '?'; }
+function cap(s) { return String(s || '').replace(/^./, c => c.toUpperCase()); }
+
 function fire(f, triggerName, ctx) {
   ctx.self = ctx.self || f;
   for (const item of matching(f, triggerName, ctx)) {
@@ -311,6 +239,13 @@ function fire(f, triggerName, ctx) {
     consumeIfNeeded(f, item);
   }
   return ctx;
+}
+
+// Public: fire any trigger by name (used by abilities.js for sig-spent hooks).
+export function fireTrigger(f, triggerName, ctx) {
+  ctx = ctx || { self: f };
+  ctx.cbs = ctx.cbs || {};
+  return fire(f, triggerName, ctx);
 }
 
 // ─── Public API ──────────────────────────────────────────────────────
@@ -329,7 +264,6 @@ export function applyPowerMult(attacker, defender, ability, power, phase, { atta
     outPower: power,
   };
   fire(attacker, 'power_query', ctx);
-  // Phase-level damage modifiers (execute_scale, status_synergy)
   const exec = (phase || []).find(e => e.type === 'execute_scale');
   if (exec) {
     const sa = exec.scaleAmount ?? 0.5;
@@ -356,8 +290,8 @@ export function applyFlatDmgReduction(defender, raw, attackElement = null) {
 }
 
 export function getCritProfile(attacker) {
-  let chance = 0.08;
-  let mult = 1.7;
+  let chance = 0.10;
+  let mult = 1.6;
   if (state.relics && state.relics.length) {
     for (const r of state.relics) {
       if (r.critChanceBonus) chance += r.critChanceBonus;
@@ -418,11 +352,6 @@ export function winsTies(f) {
   return ctx.outWin;
 }
 
-export function hasFirstAttackThisRound(f) {
-  return f && (f.actionsThisTurn || 0) === 0;
-}
-
-// Energy discount from passives like Featherweight (swap moves cost 0).
 export function energyDiscount(f, ability) {
   const ctx = { self: f, ability, outDiscount: 0 };
   fire(f, 'energy_cost', ctx);
@@ -454,10 +383,6 @@ export function applyPostHitPassives(side, oside, attacker, defender, result, cb
       side: oside, oside: side, cbs,
     });
   }
-}
-
-export function applyTurnStartPassives(f, side, cbs) {
-  fire(f, 'turn_start', { self: f, side, cbs });
 }
 
 export function applyBenchPassives(f, isBench, cbs) {

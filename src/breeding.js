@@ -1,16 +1,18 @@
 import { rand } from './rng.js';
-import { TEMPLATES } from './data.js';
+import { TEMPLATES, ARCHETYPES } from './data.js';
 import { state, nextCreatureId, PARTY_CAP, TOTAL_WAVES } from './state.js';
 import { blendPalettes } from './art.js';
 import { advanceWave, render } from './ui/render.js';
 
-// Breed a child from two parents. The child takes the BEST stat of each parent
-// (slight variance), so children are an upgrade — the ritual is supposed to be
-// worth the cost of two creatures.
+// Breed a child from two parents.
+//   - Stats = max-of-parents + 10% bonus
 //   - Level = max(parents) + 1
-//   - Stats = max of parents per stat + small variance
-//   - Growth = species-shape parent's growth weighted 70%, other 30%
-//   - Species/type follow speciesFromB
+//   - Growth = weighted toward species-shape parent
+//   - Archetype = species-shape parent's archetype
+//   - Abilities + passives: union, chosen by player
+//
+// The child is a HYBRID if the two parents are different archetypes — the
+// child can hold abilities from both archetypes and tracks stacks for both.
 export function makeChild(pa, pb, abilities, passives, speciesFromB) {
   const speciesSource = speciesFromB ? pb : pa;
   const otherParent  = speciesFromB ? pa : pb;
@@ -22,21 +24,21 @@ export function makeChild(pa, pb, abilities, passives, speciesFromB) {
     def: speciesSource.growth.def * 0.70 + otherParent.growth.def * 0.30,
     spd: speciesSource.growth.spd * 0.70 + otherParent.growth.spd * 0.30,
   };
-  // Child gets the best of each parent + 10% bonus + small variance, so the
-  // ritual produces a creature stronger than either parent (the cost is two
-  // creatures consumed).
   const bonus = (n) => Math.max(1, Math.round(n * 0.10 + rand(0, 1)));
   const stats = {
-    hp:  Math.max(8, Math.max(pa.stats.hp,  pb.stats.hp)  + bonus(Math.max(pa.stats.hp,  pb.stats.hp))),
-    atk: Math.max(2, Math.max(pa.stats.atk, pb.stats.atk) + bonus(Math.max(pa.stats.atk, pb.stats.atk))),
-    def: Math.max(1, Math.max(pa.stats.def, pb.stats.def) + bonus(Math.max(pa.stats.def, pb.stats.def))),
-    spd: Math.max(1, Math.max(pa.stats.spd, pb.stats.spd) + bonus(Math.max(pa.stats.spd, pb.stats.spd))),
+    hp:  Math.max(10, Math.max(pa.stats.hp,  pb.stats.hp)  + bonus(Math.max(pa.stats.hp,  pb.stats.hp))),
+    atk: Math.max(3,  Math.max(pa.stats.atk, pb.stats.atk) + bonus(Math.max(pa.stats.atk, pb.stats.atk))),
+    def: Math.max(2,  Math.max(pa.stats.def, pb.stats.def) + bonus(Math.max(pa.stats.def, pb.stats.def))),
+    spd: Math.max(2,  Math.max(pa.stats.spd, pb.stats.spd) + bonus(Math.max(pa.stats.spd, pb.stats.spd))),
   };
   const level = Math.max(pa.level, pb.level) + 1;
+  // Archetype: inherit from species-shape parent
+  const archetype = speciesSource.archetype || template.archetype || 'striker';
   return {
     id: nextCreatureId(),
     species: template.species,
     type: speciesSource.type,
+    archetype,
     growth,
     level,
     xp: 0,
@@ -46,12 +48,9 @@ export function makeChild(pa, pb, abilities, passives, speciesFromB) {
     passives,
     palette,
     customName: null,
-    // Child inherits the species-shape parent's signature mechanic.
-    signature: template.signature || null,
   };
 }
 
-// finalizeBreed removes the two parents from party/reserve and inserts the child.
 export function finalizeBreed(pa, pb, child) {
   state.party   = state.party.filter(c => c.id !== pa.id && c.id !== pb.id);
   state.reserve = state.reserve.filter(c => c.id !== pa.id && c.id !== pb.id);
@@ -68,6 +67,7 @@ export function finalizeBreed(pa, pb, child) {
     state.pendingRoomKind = 'boss';
     advanceWave();
   } else {
+    state.pathChoices = null;
     state.screen = 'path';
     render();
   }

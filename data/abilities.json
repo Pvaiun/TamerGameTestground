@@ -1,453 +1,406 @@
 {
   "_format": {
-    "note": "Each ability has cost (1-3 energy), priority (legacy, used for tie-break only), phases [[effect,...],...] and short text. Signature abilities (per-species) reference sigStacks via type:'sig_*' effects. The intent label is shown to the player when an enemy plans this action."
+    "note": "Cost balance: 1E for utilities (buffs/braces/cheap heals), 2E for standard attacks, 3E for payoff/big plays. Multi-attack turns require utility setup (1E) + attack (2E)."
   },
 
   "strike": {
     "name": "Strike",
     "intent": "Strike",
-    "cost": 1,
-    "tags": ["attack"],
-    "phases": [
-      [{ "type": "damage", "power": 38 }]
-    ],
-    "effect": "Cheap basic attack. 38 power.",
-    "flavor": "They hit it. !!There is no other word for what they did.!!"
+    "archetype": "universal",
+    "cost": 2, "tags": ["attack"],
+    "phases": [[{ "type": "damage", "power": 45 }]],
+    "effect": "2E · 45 power. Reliable.",
+    "flavor": "They hit it. !!There is no other word.!!"
   },
-
-  "fury": {
-    "name": "Rage",
-    "intent": "Rage",
-    "cost": 1,
-    "tags": ["buff"],
-    "phases": [
-      [
-        { "type": "buff", "statMult": { "atk": 0.30 }, "targets": ["self"], "turns": 2 }
-      ]
-    ],
-    "effect": "Atk +30% for 2 rounds.",
-    "flavor": "The room narrows. Only what they strike is **real**."
-  },
-
   "focus": {
     "name": "Focus",
     "intent": "Focus",
-    "cost": 1,
-    "tags": ["buff"],
-    "phases": [
-      [
-        { "type": "buff", "statMult": { "def": 0.30 }, "targets": ["self"], "turns": 2 }
-      ]
-    ],
-    "effect": "Def +30% for 2 rounds.",
-    "flavor": "They steady. Nothing else is in the room."
+    "archetype": "universal",
+    "cost": 1, "tags": ["buff"],
+    "phases": [[{ "type": "buff", "statMult": { "atk": 0.20, "def": 0.20 }, "targets": ["self"], "turns": 2 }]],
+    "effect": "1E · atk +20%, def +20% for 2 rounds.",
+    "flavor": "They sharpen. Nothing else is in the room."
+  },
+  "step_back": {
+    "name": "Step Back",
+    "intent": "Step Back",
+    "archetype": "universal",
+    "cost": 1, "tags": ["swap"],
+    "phases": [[{ "type": "swap", "targets": ["self"], "healOnSwap": 0.20 }]],
+    "effect": "1E · Swap to bench. Incoming heals 20%.",
+    "flavor": "The bench takes the next ~~one~~ blow."
+  },
+
+  "swing": {
+    "name": "Swing",
+    "intent": "Swing",
+    "archetype": "striker",
+    "cost": 2, "tags": ["attack", "sig_gain_momentum"],
+    "phases": [[
+      { "type": "damage", "power": 40 },
+      { "type": "sig_gain", "key": "momentum", "amount": 1 }
+    ]],
+    "effect": "2E · 40 power. Gain 1 Momentum.",
+    "flavor": "They wind up where the wound is."
+  },
+  "press": {
+    "name": "Press",
+    "intent": "Press",
+    "archetype": "striker",
+    "cost": 3, "tags": ["attack", "sig_gain_momentum"],
+    "phases": [[
+      { "type": "damage", "power": 75 },
+      { "type": "sig_gain", "key": "momentum", "amount": 1 }
+    ]],
+    "effect": "3E · 75 power. Gain 1 Momentum.",
+    "flavor": "All their weight, downward."
+  },
+  "crescendo": {
+    "name": "Crescendo",
+    "intent": "Crescendo",
+    "archetype": "striker",
+    "cost": 3, "tags": ["attack", "sig_consume_momentum"],
+    "phases": [[
+      { "type": "damage", "power": 50 },
+      { "type": "sig_consume_dmg", "key": "momentum", "perStack": 0.25 }
+    ]],
+    "effect": "3E · 50 power +25% per Momentum (spends all).",
+    "flavor": "Each strike louder than the last. !!Then it is the last.!!"
+  },
+  "reckless": {
+    "name": "Reckless",
+    "intent": "Reckless",
+    "archetype": "striker",
+    "cost": 2, "tags": ["attack"],
+    "phases": [[
+      { "type": "hp_cost", "percent": 0.10 },
+      { "type": "damage", "power": 70 }
+    ]],
+    "effect": "2E · 70 power. Costs 10% hp.",
+    "flavor": "They give it everything. !!Some of what they give is theirs.!!"
+  },
+  "execute_marks": {
+    "name": "Execute",
+    "intent": "Execute",
+    "archetype": "striker",
+    "cost": 3, "tags": ["attack"],
+    "phases": [[
+      { "type": "damage", "power": 55 },
+      { "type": "execute_scale", "scaleAmount": 0.6 }
+    ]],
+    "effect": "3E · 55 power. Up to +60% on wounded targets.",
+    "flavor": "They name what's open. !!The wound answers.!!"
+  },
+  "fury": {
+    "name": "Fury",
+    "intent": "Fury",
+    "archetype": "striker",
+    "cost": 1, "tags": ["buff"],
+    "phases": [[{ "type": "buff", "statMult": { "atk": 0.30 }, "targets": ["self"], "turns": 2 }]],
+    "effect": "1E · atk +30% for 2 rounds.",
+    "flavor": "The room narrows. Only what they strike is **real**."
+  },
+  "exhaust": {
+    "name": "Exhaust",
+    "intent": "Exhaust",
+    "archetype": "striker",
+    "cost": 2, "tags": ["attack", "status"],
+    "phases": [[
+      { "type": "damage", "power": 35 },
+      { "type": "apply_status", "status": "soaking", "targets": ["enemy"] }
+    ]],
+    "effect": "2E · 35 power + Drained.",
+    "flavor": "They take ~~the breath~~ what was held."
+  },
+  "double_strike": {
+    "name": "Double Strike",
+    "intent": "Double Strike",
+    "archetype": "striker",
+    "cost": 2, "tags": ["attack"],
+    "phases": [[{ "type": "damage", "power": 26, "hits": 2 }]],
+    "effect": "2E · 26 power, twice.",
+    "flavor": "They were already hitting it before they stopped."
   },
 
   "stoic": {
-    "name": "Brace",
-    "intent": "Brace",
-    "cost": 1,
-    "tags": ["defense"],
-    "phases": [
-      [
-        { "type": "bracing", "targets": ["self"] }
-      ]
-    ],
-    "effect": "Reduce incoming damage 60% this round.",
+    "name": "Stoic",
+    "intent": "Stoic",
+    "archetype": "warden",
+    "cost": 1, "tags": ["defense", "sig_gain_guard"],
+    "phases": [[
+      { "type": "bracing", "targets": ["self"] },
+      { "type": "sig_gain", "key": "guard", "amount": 1 }
+    ]],
+    "effect": "1E · Brace (-50% next hit). Gain 1 Guard.",
     "flavor": "They steady. !!The room narrows around them.!!"
+  },
+  "earthwall": {
+    "name": "Earthwall",
+    "intent": "Earthwall",
+    "archetype": "warden",
+    "cost": 2, "tags": ["defense", "sig_gain_guard"],
+    "phases": [[
+      { "type": "buff", "statMult": { "def": 0.30 }, "targets": ["self"], "turns": 2 },
+      { "type": "sig_gain", "key": "guard", "amount": 2 }
+    ]],
+    "effect": "2E · def +30% for 2 rounds. Gain 2 Guard.",
+    "flavor": "What they will not move from, the room arranges around."
+  },
+  "retort": {
+    "name": "Retort",
+    "intent": "Retort",
+    "archetype": "warden",
+    "cost": 2, "tags": ["attack", "sig_consume_guard"],
+    "phases": [[
+      { "type": "damage", "power": 38 },
+      { "type": "sig_consume_dmg", "key": "guard", "perStack": 0.30 }
+    ]],
+    "effect": "2E · 38 power +30% per Guard (spends all).",
+    "flavor": "They strike with what was struck at them."
+  },
+  "ironwall": {
+    "name": "Ironwall",
+    "intent": "Ironwall",
+    "archetype": "warden",
+    "cost": 3, "tags": ["defense", "sig_consume_guard"],
+    "phases": [[
+      { "type": "sig_consume_heal", "key": "guard", "perStack": 0.10 },
+      { "type": "buff", "statMult": { "def": 0.45 }, "targets": ["self"], "turns": 2 }
+    ]],
+    "effect": "3E · def +45% (2r). Heal 10% per Guard (spends all).",
+    "flavor": "The wall does not fall. ~~Yet.~~"
+  },
+  "bulwark_strike": {
+    "name": "Bulwark Strike",
+    "intent": "Bulwark Strike",
+    "archetype": "warden",
+    "cost": 2, "tags": ["attack"],
+    "phases": [[
+      { "type": "damage", "power": 50 },
+      { "type": "buff", "statMult": { "def": 0.15 }, "targets": ["self"], "turns": 2 }
+    ]],
+    "effect": "2E · 50 power. Self def +15% for 2 rounds.",
+    "flavor": "They lean into it. The hit is not free for them either."
+  },
+  "groundbreak": {
+    "name": "Groundbreak",
+    "intent": "Groundbreak",
+    "archetype": "warden",
+    "cost": 3, "tags": ["attack"],
+    "phases": [[{ "type": "damage", "power": 85 }]],
+    "effect": "3E · 85 power.",
+    "flavor": "What they bring down does not rise."
+  },
+  "hold_position": {
+    "name": "Hold",
+    "intent": "Hold",
+    "archetype": "warden",
+    "cost": 1, "tags": ["defense"],
+    "phases": [[{ "type": "buff", "statMult": { "def": 0.25 }, "targets": ["self"], "turns": 2 }]],
+    "effect": "1E · def +25% for 2 rounds.",
+    "flavor": "They will not move. Even from this."
+  },
+  "anchor": {
+    "name": "Anchor",
+    "intent": "Anchor",
+    "archetype": "warden",
+    "cost": 2, "tags": ["heal", "sig_consume_guard"],
+    "phases": [[
+      { "type": "sig_consume_heal", "key": "guard", "perStack": 0.08 }
+    ]],
+    "effect": "2E · Heal 8% per Guard (spends all).",
+    "flavor": "They take from the wall they stood."
+  },
+
+  "mark": {
+    "name": "Mark",
+    "intent": "Mark",
+    "archetype": "weaver",
+    "cost": 2, "tags": ["status", "sig_gain_threads"],
+    "phases": [[
+      { "type": "damage", "power": 28 },
+      { "type": "apply_status", "status": "cursed", "targets": ["enemy"] },
+      { "type": "sig_gain", "key": "threads", "amount": 1 }
+    ]],
+    "effect": "2E · 28 power + Broken. Gain 1 Thread.",
+    "flavor": "They write the wrong name where staff will read it."
+  },
+  "kindle": {
+    "name": "Kindle",
+    "intent": "Kindle",
+    "archetype": "weaver",
+    "cost": 2, "tags": ["status", "sig_gain_threads"],
+    "phases": [[
+      { "type": "damage", "power": 28 },
+      { "type": "apply_status", "status": "burn", "targets": ["enemy"] },
+      { "type": "sig_gain", "key": "threads", "amount": 1 }
+    ]],
+    "effect": "2E · 28 power + Fevering. Gain 1 Thread.",
+    "flavor": "They tell it it is warming. **They lie.**"
+  },
+  "drench": {
+    "name": "Drench",
+    "intent": "Drench",
+    "archetype": "weaver",
+    "cost": 2, "tags": ["status", "sig_gain_threads"],
+    "phases": [[
+      { "type": "damage", "power": 28 },
+      { "type": "apply_status", "status": "soaking", "targets": ["enemy"] },
+      { "type": "sig_gain", "key": "threads", "amount": 1 }
+    ]],
+    "effect": "2E · 28 power + Drained. Gain 1 Thread.",
+    "flavor": "The water knows where to go."
+  },
+  "hex": {
+    "name": "Hex",
+    "intent": "Hex",
+    "archetype": "weaver",
+    "cost": 2, "tags": ["status", "sig_gain_threads"],
+    "phases": [[
+      { "type": "damage", "power": 30 },
+      { "type": "apply_status", "status": "dazed", "targets": ["enemy"] },
+      { "type": "sig_gain", "key": "threads", "amount": 1 }
+    ]],
+    "effect": "2E · 30 power + Sedated. Gain 1 Thread.",
+    "flavor": "The patient does not remember what they were doing."
+  },
+  "tangle": {
+    "name": "Tangle",
+    "intent": "Tangle",
+    "archetype": "weaver",
+    "cost": 3, "tags": ["attack", "sig_consume_threads"],
+    "phases": [[
+      { "type": "damage", "power": 35 },
+      { "type": "sig_consume_dmg", "key": "threads", "perStack": 0.30 },
+      { "type": "status_synergy_per_status", "powerMult": 0.20 }
+    ]],
+    "effect": "3E · 35 power +30% per Thread +20% per status on target.",
+    "flavor": "They pull every loose end at once. !!The patient pulls apart.!!"
+  },
+  "spread": {
+    "name": "Spread",
+    "intent": "Spread",
+    "archetype": "weaver",
+    "cost": 2, "tags": ["status", "sig_consume_threads"],
+    "phases": [[
+      { "type": "sig_consume_status_share", "key": "threads", "minStacks": 1 }
+    ]],
+    "effect": "2E · Spend all Threads: copy worst status to enemy bench.",
+    "flavor": "What's on them, the next one wears."
+  },
+  "wilt": {
+    "name": "Wilt",
+    "intent": "Wilt",
+    "archetype": "weaver",
+    "cost": 2, "tags": ["debuff"],
+    "phases": [[{ "type": "buff", "statMult": { "atk": -0.25, "spd": -0.15 }, "targets": ["enemy"], "turns": 2 }]],
+    "effect": "2E · enemy atk -25%, spd -15% for 2 rounds.",
+    "flavor": "Something in them sags. They cannot place it."
+  },
+  "sap": {
+    "name": "Sap",
+    "intent": "Sap",
+    "archetype": "weaver",
+    "cost": 2, "tags": ["attack", "heal"],
+    "phases": [[
+      { "type": "damage", "power": 30 },
+      { "type": "lifesteal", "percentOfDamage": 0.5 }
+    ]],
+    "effect": "2E · 30 power. Heal 50% of damage.",
+    "flavor": "They take a piece. ~~They keep it.~~"
   },
 
   "mend": {
     "name": "Mend",
     "intent": "Mend",
-    "cost": 2,
-    "tags": ["heal"],
-    "phases": [
-      [
-        { "type": "heal_self_pct", "percent": 0.20 }
-      ]
-    ],
-    "effect": "Heal 20% max hp.",
+    "archetype": "keeper",
+    "cost": 1, "tags": ["heal", "sig_gain_tend"],
+    "phases": [[
+      { "type": "heal_self_pct", "percent": 0.18 },
+      { "type": "sig_gain", "key": "tend", "amount": 1 }
+    ]],
+    "effect": "1E · Heal 18%. Gain 1 Tend.",
     "flavor": "They bind what is open. It ~~closes~~ keeps."
   },
-
-  "ember": {
-    "name": "Ember",
-    "intent": "Ember",
-    "element": "fire",
-    "cost": 2,
-    "tags": ["attack"],
-    "phases": [
-      [{ "type": "damage", "power": 60 }]
-    ],
-    "effect": "Deal 60 power fire damage.",
-    "flavor": "A small heat. It remembers being [[6]]."
+  "soothe": {
+    "name": "Soothe",
+    "intent": "Soothe",
+    "archetype": "keeper",
+    "cost": 2, "tags": ["heal", "sig_gain_tend"],
+    "phases": [[
+      { "type": "heal_bench_pct", "percent": 0.25 },
+      { "type": "apply_status", "status": "bloom", "targets": ["self", "bench"] },
+      { "type": "sig_gain", "key": "tend", "amount": 1 }
+    ]],
+    "effect": "2E · Bench +25% hp. Self+bench Mending. Gain 1 Tend.",
+    "flavor": "They tend the rest. The room dims to let them."
   },
-
-  "smoldering": {
-    "name": "Smolder",
-    "intent": "Smolder",
-    "element": "fire",
-    "cost": 2,
-    "tags": ["attack", "status"],
-    "phases": [
-      [
-        { "type": "damage", "power": 35 },
-        { "type": "apply_status", "status": "burn", "targets": ["enemy"] }
-      ]
-    ],
-    "effect": "35 fire dmg + Fevering.",
-    "flavor": "The heat comes after, !!slower than the strike!!."
+  "rebloom": {
+    "name": "Rebloom",
+    "intent": "Rebloom",
+    "archetype": "keeper",
+    "cost": 3, "tags": ["heal", "sig_consume_tend"],
+    "phases": [[
+      { "type": "sig_consume_heal", "key": "tend", "perStack": 0.22 },
+      { "type": "apply_status", "status": "bloom", "targets": ["self"] }
+    ]],
+    "effect": "3E · Heal 22% per Tend (spends all). Apply Mending.",
+    "flavor": "Where they bled, !!something grows back wrong but green!!."
   },
-
-  "surge": {
-    "name": "Surge",
-    "intent": "Surge",
-    "element": "water",
-    "cost": 2,
-    "tags": ["attack", "sig_tide"],
-    "phases": [
-      [
-        { "type": "damage", "power": 50 },
-        { "type": "sig_consume_tide_dmg", "lowMult": 0.7, "highMult": 1.5 }
-      ]
-    ],
-    "effect": "50 power water dmg. Low tide: 0.7×. High tide: 1.5×.",
-    "flavor": "The water knows where to go."
+  "cleanse_wave": {
+    "name": "Cleanse Wave",
+    "intent": "Cleanse Wave",
+    "archetype": "keeper",
+    "cost": 2, "tags": ["heal", "cleanse"],
+    "phases": [[
+      { "type": "cleanse", "targets": ["self", "bench"] },
+      { "type": "sig_gain", "key": "tend", "amount": 1 }
+    ]],
+    "effect": "2E · Cleanse self+bench. Gain 1 Tend.",
+    "flavor": "What was on them lifts. They feel **clean**."
   },
-
-  "drown": {
-    "name": "Drown",
-    "intent": "Drown",
-    "element": "water",
-    "cost": 3,
-    "tags": ["attack", "status", "sig_tide"],
-    "phases": [
-      [
-        { "type": "damage", "power": 80 },
-        { "type": "apply_status", "status": "soaking", "targets": ["enemy"] },
-        { "type": "sig_consume_tide_dmg", "lowMult": 0.8, "highMult": 1.4 }
-      ]
-    ],
-    "effect": "80 power water + Drained. Tide modifies.",
-    "flavor": "The water reaches !!places they did not know it could!!."
+  "hymn": {
+    "name": "Hymn",
+    "intent": "Hymn",
+    "archetype": "keeper",
+    "cost": 3, "tags": ["heal", "sig_consume_tend"],
+    "phases": [[
+      { "type": "sig_consume_heal_party", "key": "tend", "perStack": 0.18 }
+    ]],
+    "effect": "3E · Heal self AND bench 18% per Tend (spends all).",
+    "flavor": "They sing a hymn the staff did not teach. !!Everyone knows it.!!"
   },
-
-  "vapor_cloak": {
-    "name": "Vapor",
-    "intent": "Vapor",
-    "element": "water",
-    "cost": 1,
-    "tags": ["defense"],
-    "phases": [
-      [
-        { "type": "buff", "statMult": { "def": 0.40 }, "targets": ["self"], "turns": 2 }
-      ]
-    ],
-    "effect": "Def +40% for 2 rounds.",
-    "flavor": "They are where they were. The other cannot ~~find~~ see it."
-  },
-
-  "tactical_retreat": {
-    "name": "Step Back",
-    "intent": "Step Back",
-    "cost": 2,
-    "tags": ["swap"],
-    "phases": [
-      [
-        { "type": "swap", "targets": ["self"], "healOnSwap": 0.25 }
-      ]
-    ],
-    "effect": "Swap to bench. Incoming heals 25%.",
-    "flavor": "The bench takes the next ~~one~~ blow."
-  },
-
-  "aegis_swap": {
-    "name": "Lightstep",
-    "intent": "Lightstep",
+  "gentle_beam": {
+    "name": "Gentle Beam",
+    "intent": "Gentle Beam",
+    "archetype": "keeper",
     "element": "light",
-    "cost": 2,
-    "tags": ["swap"],
-    "phases": [
-      [
-        { "type": "swap", "targets": ["self"], "buffOnSwap": { "def": 0.30 } }
-      ]
-    ],
-    "effect": "Swap to bench. Incoming gets def +30%.",
-    "flavor": "They go behind. Another comes forward, ~~bright~~ warmed."
+    "cost": 2, "tags": ["attack", "heal"],
+    "phases": [[
+      { "type": "damage", "power": 38 },
+      { "type": "lifesteal", "percentOfDamage": 0.45 }
+    ]],
+    "effect": "2E · 38 light power. Heal 45% of damage.",
+    "flavor": "The light leaves nothing behind. It does not !!leave!!."
   },
-
-  "shadow_step": {
-    "name": "Slip",
-    "intent": "Slip",
-    "element": "dark",
-    "cost": 2,
-    "tags": ["attack", "swap"],
-    "phases": [
-      [
-        { "type": "damage", "power": 35 },
-        { "type": "swap", "targets": ["self"] }
-      ]
-    ],
-    "effect": "35 dmg + swap to bench.",
-    "flavor": "They were here. Now they are ~~not~~ behind it."
+  "covenant": {
+    "name": "Covenant",
+    "intent": "Covenant",
+    "archetype": "keeper",
+    "cost": 2, "tags": ["swap"],
+    "phases": [[
+      { "type": "swap", "targets": ["self"], "buffOnSwap": { "atk": 0.20, "def": 0.20 }, "healOnSwap": 0.20 }
+    ]],
+    "effect": "2E · Swap. Incoming: +20% atk/def, +20% hp.",
+    "flavor": "They take their place. They take their promise with them."
   },
-
-  "shade": {
-    "name": "Shade",
-    "intent": "Shade",
-    "element": "dark",
-    "cost": 2,
-    "tags": ["attack"],
-    "phases": [
-      [
-        { "type": "damage", "power": 45 },
-        { "type": "pierce", "defReduction": 0.6 }
-      ]
-    ],
-    "effect": "45 dmg, ignores 60% def.",
-    "flavor": "They touch through the [[5]]."
-  },
-
-  "spore_cloud": {
-    "name": "Spore",
-    "intent": "Spore",
-    "element": "grass",
-    "cost": 2,
-    "tags": ["status"],
-    "phases": [
-      [
-        { "type": "apply_status", "status": "bloom", "targets": ["self", "bench"] },
-        { "type": "apply_status", "status": "soaking", "targets": ["enemy"] }
-      ]
-    ],
-    "effect": "Mending self+bench. Drained on enemy.",
-    "flavor": "They release what was held in. The air ~~softens~~ thickens."
-  },
-
-  "halo": {
-    "name": "Halo",
-    "intent": "Halo",
-    "element": "light",
-    "cost": 1,
-    "tags": ["attack", "sig_light"],
-    "phases": [
-      [
-        { "type": "damage", "power": 30 },
-        { "type": "sig_gain_light", "amount": 1 }
-      ]
-    ],
-    "effect": "30 light dmg. Build 1 Light.",
-    "flavor": "A small light. They keep it close."
-  },
-
-  "sunburst": {
-    "name": "Sunburst",
-    "intent": "Sunburst",
-    "element": "light",
-    "cost": 3,
-    "tags": ["attack", "sig_light"],
-    "phases": [
-      [
-        { "type": "damage", "power": 70 },
-        { "type": "sig_consume_light_dmg", "perStack": 0.20, "minStacks": 0 }
-      ]
-    ],
-    "effect": "70 light dmg. Spend all Light: +20% dmg per stack.",
-    "flavor": "They open. Whatever they were holding goes with it."
-  },
-
-  "pyre": {
-    "name": "Pyre",
-    "intent": "Pyre",
-    "element": "fire",
-    "cost": 2,
-    "tags": ["attack", "status", "sig_heat"],
-    "phases": [
-      [
-        { "type": "damage", "power": 45 },
-        { "type": "apply_status", "status": "burn", "targets": ["enemy"] },
-        { "type": "sig_gain_heat", "amount": 1 }
-      ]
-    ],
-    "effect": "45 fire dmg + Fevering. Build 1 Heat.",
-    "flavor": "They tell it it is warming. **They lie.**"
-  },
-
-  "furnace": {
-    "name": "Furnace",
-    "intent": "Furnace",
-    "element": "fire",
-    "cost": 3,
-    "tags": ["attack", "sig_heat"],
-    "phases": [
-      [
-        { "type": "damage", "power": 60 },
-        { "type": "sig_consume_heat_dmg", "perStack": 0.30, "minStacks": 1 }
-      ]
-    ],
-    "effect": "60 fire dmg. Spend all Heat: +30% per stack. Needs 1+ Heat.",
-    "flavor": "They open the kiln. !!It does not close.!!"
-  },
-
-  "bramble": {
-    "name": "Bramble",
-    "intent": "Bramble",
-    "element": "grass",
-    "cost": 2,
-    "tags": ["attack", "sig_roots"],
-    "phases": [
-      [
-        { "type": "damage", "power": 38 },
-        { "type": "apply_status", "status": "bloom", "targets": ["self"] },
-        { "type": "sig_gain_roots", "amount": 1 }
-      ]
-    ],
-    "effect": "38 grass dmg. Mending self. Build 1 Roots.",
-    "flavor": "The green takes the shape of teeth."
-  },
-
-  "overgrowth": {
-    "name": "Overgrowth",
-    "intent": "Overgrowth",
-    "element": "grass",
-    "cost": 3,
-    "tags": ["attack", "sig_roots"],
-    "phases": [
-      [
-        { "type": "damage", "power": 55 },
-        { "type": "sig_consume_roots_dmg", "perStack": 0.25 }
-      ]
-    ],
-    "effect": "55 grass dmg. Spend all Roots: +25% per stack.",
-    "flavor": "There is more of them than there should be."
-  },
-
-  "mark_shade": {
-    "name": "Mark",
-    "intent": "Mark",
-    "element": "dark",
-    "cost": 1,
-    "tags": ["attack", "status", "sig_marks"],
-    "phases": [
-      [
-        { "type": "damage", "power": 22 },
-        { "type": "sig_gain_marks", "amount": 1 }
-      ]
-    ],
-    "effect": "22 dmg. Place 1 Mark on enemy.",
-    "flavor": "They write it down where the patient cannot see."
-  },
-
-  "execute": {
-    "name": "Execute",
-    "intent": "Execute",
-    "element": "dark",
-    "cost": 3,
-    "tags": ["attack", "sig_marks"],
-    "phases": [
-      [
-        { "type": "damage", "power": 60 },
-        { "type": "sig_consume_marks_dmg", "perStack": 0.50, "minStacks": 1 }
-      ]
-    ],
-    "effect": "60 dmg. Spend all Marks: +50% per stack. Needs 1+ Mark.",
-    "flavor": "They name what they wrote. !!The page becomes the wound.!!"
-  },
-
-  "chill": {
-    "name": "Chill",
-    "intent": "Chill",
-    "element": "water",
-    "cost": 1,
-    "tags": ["attack", "status", "sig_frost"],
-    "phases": [
-      [
-        { "type": "damage", "power": 24 },
-        { "type": "sig_gain_frost", "amount": 1 }
-      ]
-    ],
-    "effect": "24 water dmg. Build 1 Frost.",
-    "flavor": "The cold finds them first."
-  },
-
-  "shatter": {
-    "name": "Shatter",
-    "intent": "Shatter",
-    "element": "water",
-    "cost": 3,
-    "tags": ["attack", "sig_frost"],
-    "phases": [
-      [
-        { "type": "damage", "power": 50 },
-        { "type": "sig_consume_frost_shatter", "perStack": 0.25 }
-      ]
-    ],
-    "effect": "50 dmg. Spend all Frost: +25% dmg per, applies Sedated if 3+.",
-    "flavor": "What was cold is now ~~broken~~ open."
-  },
-
-  "radiance": {
-    "name": "Radiance",
-    "intent": "Radiance",
-    "element": "light",
-    "cost": 2,
-    "tags": ["attack", "sig_embers"],
-    "phases": [
-      [
-        { "type": "damage", "power": 42 },
-        { "type": "sig_gain_embers", "amount": 1 }
-      ]
-    ],
-    "effect": "42 light dmg. Build 1 Ember.",
-    "flavor": "The light gathers along their hand."
-  },
-
-  "supernova": {
-    "name": "Supernova",
-    "intent": "Supernova",
-    "element": "light",
-    "cost": 3,
-    "tags": ["attack", "sig_embers"],
-    "phases": [
-      [
-        { "type": "damage", "power": 30 },
-        { "type": "sig_consume_embers_aoe", "perStack": 0.40 }
-      ]
-    ],
-    "effect": "30 dmg + 30 dmg per Ember to ALL enemies. Spends all.",
-    "flavor": "They open. **The room cannot hold it.**"
-  },
-
-  "devour": {
-    "name": "Devour",
-    "intent": "Devour",
-    "element": "grass",
-    "cost": 2,
-    "tags": ["attack", "sig_hollow"],
-    "phases": [
-      [
-        { "type": "damage", "power": 40 },
-        { "type": "lifesteal", "percentOfDamage": 0.6 },
-        { "type": "sig_gain_hollow", "amount": 1 }
-      ]
-    ],
-    "effect": "40 dmg. Heal 60% of damage. Build 1 Hollow.",
-    "flavor": "They take a piece. ~~They keep it.~~"
-  },
-
-  "hollow_call": {
-    "name": "Hollow Call",
-    "intent": "Hollow Call",
-    "element": "grass",
-    "cost": 3,
-    "tags": ["status", "sig_hollow"],
-    "phases": [
-      [
-        { "type": "sig_consume_hollow_curse", "perStack": 1 }
-      ]
-    ],
-    "effect": "Spend all Hollow: apply Broken (3+turns scale with Hollow).",
-    "flavor": "They name the patient by the wrong name. !!The patient answers.!!"
+  "sip": {
+    "name": "Sip",
+    "intent": "Sip",
+    "archetype": "keeper",
+    "cost": 1, "tags": ["heal"],
+    "phases": [[{ "type": "heal_self_pct", "percent": 0.10 }]],
+    "effect": "1E · Heal 10%.",
+    "flavor": "They drink. The cup is small. They drink again."
   }
 }

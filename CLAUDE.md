@@ -1,14 +1,25 @@
-# Bloodlines — Codebase Map (v3)
+# Bloodlines — Codebase Map (v4)
 
 A creature-tamer roguelite, document-horror tone. Vanilla ES modules, no build step, no deps. Open `index.html` to run.
 
-## What's new in v3
+## What's new in v4
 
-- **Energy-based combat.** Each round, both fighters get 3 energy. Abilities cost 1-3. Multi-action turns (combo bonus +18% per extra action). Player ends turn manually or auto-ends at 0 energy.
-- **Signature mechanics.** Each species has a unique resource (Light, Heat, Tide, Roots, Marks, Frost, Embers, Hollow). Signature abilities build/spend stacks for distinct playstyles.
-- **Dual log streams.** A scrollable mechanical "battle log" (compact, persistent) sits beside an atmospheric "lore line" panel. Both visible during combat.
-- **Enemy intent preview.** At the top of each round, the AI commits to its first move; the player sees a tag ("they plan: Furnace ~24") and plans accordingly.
-- **Path picker with real tradeoffs.** All paths consume one descent. Choose between battle (xp+capture), elite (harder + relic), records (relic, no fight), or treatment (permanent stat, no fight). Fewer fights = fewer xp/captures but more relics; more fights = stronger creatures but no relics.
+- **Four archetypes** drive creature design (categories, not closed loops):
+  - **Striker** builds **Momentum** by attacking, spends it for crushing payoffs.
+  - **Warden** builds **Guard** from defensive plays, spends it as shields/reflection.
+  - **Weaver** builds **Threads** by applying statuses, spends them to spread.
+  - **Keeper** builds **Tend** by healing, spends it for bigger heals or shared healing.
+- Each species belongs to one archetype, but has its own element + 1-2 species-specific passive twists.
+- **Hybrid creatures from breeding** carry stacks from MULTIPLE archetypes. A bred Striker × Keeper offspring can build both Momentum and Tend in the same battle. This is where build-crafting lives.
+- **Rebalanced damage** so the player can actually win. New formula: `atk * (power/25) * (atk/(atk+def)) * 0.95`. Most attacks cost 2E now (1 attack per turn norm), so multi-action turns are setup → payoff plays rather than triple-attack burst.
+- Combo bonus reduced to +10% per extra action (cap 1.3x). Crit chance/mult: 10% / 1.6x baseline.
+
+## Older changes (v3, kept)
+
+- **Energy-based combat.** Each round, both fighters get 3 energy. Abilities cost 1-3. Player ends turn manually or auto-ends at 0 energy.
+- **Dual log streams.** A scrollable mechanical "battle log" sits beside an atmospheric "lore line" panel.
+- **Enemy intent preview** above the dossier shows what the AI plans this round.
+- **Path picker with real tradeoffs.** All paths consume one descent.
 
 ## Architecture
 `src/main.js` awaits `loadData()` (fetches `data/*.json` into named exports on `src/data.js`), then calls `render()`. The whole app is **state mutation + re-render**: modules import `state` from `src/state.js`, mutate it, then call `render()`. UI builds DOM via `el(tag, props, children)` from `src/ui/dom.js`.

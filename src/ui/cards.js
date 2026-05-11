@@ -6,7 +6,7 @@
 // aesthetic — same typography, same spacing rules.
 
 import { el, attachLongPress } from './dom.js';
-import { PASSIVES, ABILITIES, VOICE, TYPE_LABELS } from '../data.js';
+import { PASSIVES, ABILITIES, VOICE, TYPE_LABELS, ARCHETYPES } from '../data.js';
 
 const typeLabel = (t) => (TYPE_LABELS && TYPE_LABELS[t]) || t;
 import { displayName, growthRank, rankColor, xpToNext, getDossierNotes } from '../creature.js';
@@ -43,8 +43,9 @@ export function creatureCardEl(c, options = {}) {
 
   const head = el('div', { class: 'doc-card-head' });
   head.appendChild(el('span', { class: 'doc-card-name', html: parseProse(displayName(c)) }));
+  const archName = c.archetype && ARCHETYPES[c.archetype] && ARCHETYPES[c.archetype].name;
   head.appendChild(el('span', { class: 'doc-card-meta' },
-    `${typeLabel(c.type)} · l${c.level} · #${pad4(c.id)}`));
+    `${typeLabel(c.type)} ${archName ? '· ' + archName.toLowerCase() : ''} · l${c.level} · #${pad4(c.id)}`));
   body.appendChild(head);
 
   const subtitle = VOICE.subtitles[c.species] || VOICE.subtitles[c.type];

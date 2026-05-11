@@ -1126,25 +1126,49 @@
   .battle-screen .dossier-col.player { padding-left: 0;  padding-right: var(--space-3); }
   .battle-screen .dossier-col.enemy  { padding-left: var(--space-3);  padding-right: 0; }
 
-  /* signature stack row ───────────────────────────────────────── */
+  /* archetype tag (beside the name in dossier) ────────────────── */
+  .doc-title-row {
+    display: flex; align-items: baseline; gap: var(--space-2);
+    flex-wrap: wrap;
+  }
+  .doc-title-row.enemy { flex-direction: row-reverse; }
+  .arch-tag {
+    font-size: var(--fs-label-2);
+    letter-spacing: var(--ls-label);
+    padding: 2px 6px;
+    border: 1px solid currentColor;
+    border-radius: 1px;
+    color: var(--ink-80);
+  }
+  .arch-tag.arch-striker { color: var(--doc-blood); }
+  .arch-tag.arch-warden  { color: #aaccff; }
+  .arch-tag.arch-weaver  { color: #cc99ee; }
+  .arch-tag.arch-keeper  { color: #88dd88; }
+
+  /* signature stack rows ──────────────────────────────────────── */
+  .sig-stacks {
+    display: flex; flex-direction: column; gap: 2px;
+    margin-top: 4px;
+  }
+  .sig-stacks.enemy .sig-row { flex-direction: row-reverse; }
   .sig-row {
     display: flex; align-items: center; gap: var(--space-2);
     font-size: var(--fs-body-tight);
     color: var(--ink-100);
-    margin-top: 4px;
   }
-  .sig-row.enemy { flex-direction: row-reverse; }
   .sig-label {
     font-size: var(--fs-label-2);
     letter-spacing: var(--ls-label);
     color: var(--ink-60);
-    min-width: 36px;
+    min-width: 56px;
   }
   .sig-pips { display: inline-flex; gap: 2px; }
   .sig-pip { color: var(--ink-40); font-size: 12px; line-height: 1; }
+  .sig-pip.on.k-momentum { color: var(--doc-blood); }
+  .sig-pip.on.k-guard    { color: #aaccff; }
+  .sig-pip.on.k-threads  { color: #cc99ee; }
+  .sig-pip.on.k-tend     { color: #88dd88; }
   .sig-pip.on { color: var(--doc-gold); }
-  .sig-pip.mark.on { color: var(--doc-blood); }
-  .sig-marks { display: inline-flex; align-items: center; gap: 4px; margin-left: var(--space-2); }
 
   /* action bar ────────────────────────────────────────────────── */
   .action-bar {

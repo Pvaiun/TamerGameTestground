@@ -8,14 +8,16 @@ export function partyAvgLevel(roster) {
   return Math.round(roster.reduce((a, c) => a + c.level, 0) / roster.length);
 }
 
-// Standard non-elite enemy.
+// Standard enemy. Levels mildly behind party so early waves are winnable.
+//   wave 1: roughly party_level
+//   wave 5: roughly party_level + 1
+//   wave 9: roughly party_level + 2
 export function generateEnemy(wave, partyLevel) {
   const speciesName = pick(ALL_ENCOUNTER_SPECIES);
   const t = TEMPLATES.find(x => x.species === speciesName) || TEMPLATES[0];
-  const baseLvl = partyLevel + Math.floor((wave - 1) / 3);
-  const lvl = Math.max(1, Math.min(MAX_LEVEL, baseLvl + randi(-1, 1)));
-  const c = makeCreature(t, lvl);
-  return c;
+  const baseLvl = Math.max(1, partyLevel - 1 + Math.floor((wave - 1) / 4));
+  const lvl = Math.max(1, Math.min(MAX_LEVEL, baseLvl + randi(0, 1)));
+  return makeCreature(t, lvl);
 }
 
 export function generateEnemyParty(wave, partyLevel) {
@@ -29,17 +31,16 @@ export function generateEnemyParty(wave, partyLevel) {
   return [a, b];
 }
 
-// Elite encounter: single beefier enemy at +2 level with a stat boost.
 export function generateEliteEnemy(wave, partyLevel) {
   const speciesName = pick(ALL_ENCOUNTER_SPECIES);
   const t = TEMPLATES.find(x => x.species === speciesName) || TEMPLATES[0];
-  const lvl = Math.max(1, Math.min(MAX_LEVEL, partyLevel + 2 + Math.floor((wave - 1) / 3)));
+  const lvl = Math.max(1, Math.min(MAX_LEVEL, partyLevel + 1 + Math.floor((wave - 1) / 4)));
   const c = makeCreature(t, lvl);
-  c.stats.hp  = Math.round(c.stats.hp  * 1.30);
-  c.stats.atk = Math.round(c.stats.atk * 1.20);
-  c.stats.def = Math.round(c.stats.def * 1.20);
+  c.stats.hp  = Math.round(c.stats.hp  * 1.20);
+  c.stats.atk = Math.round(c.stats.atk * 1.10);
+  c.stats.def = Math.round(c.stats.def * 1.10);
   c.maxHp = c.stats.hp;
-  c.customName = `[Elite · ${eliteSpeciesName(t)}]`;
+  c.customName = `[Elite · ${t.species}]`;
   return c;
 }
 
@@ -57,13 +58,13 @@ export function generateElitePair(wave, partyLevel) {
 export function generateBoss(partyLevel) {
   const speciesName = pick(ALL_ENCOUNTER_SPECIES);
   const t = TEMPLATES.find(x => x.species === speciesName) || TEMPLATES[0];
-  const lvl = Math.max(8, Math.min(MAX_LEVEL, partyLevel + 4));
+  const lvl = Math.max(6, Math.min(MAX_LEVEL, partyLevel + 3));
   const c = makeCreature(t, lvl);
-  c.stats.hp  = Math.round(c.stats.hp  * 1.6);
-  c.stats.atk = Math.round(c.stats.atk * 1.35);
-  c.stats.def = Math.round(c.stats.def * 1.25);
+  c.stats.hp  = Math.round(c.stats.hp  * 1.50);
+  c.stats.atk = Math.round(c.stats.atk * 1.25);
+  c.stats.def = Math.round(c.stats.def * 1.20);
   c.maxHp = c.stats.hp;
-  c.customName = `[Apex · ${eliteSpeciesName(t)}]`;
+  c.customName = `[Apex · ${t.species}]`;
   return c;
 }
 
@@ -76,8 +77,4 @@ export function generateBossParty(partyLevel) {
     tries++;
   } while (boss2.species === boss1.species && tries < 10);
   return [boss1, boss2];
-}
-
-function eliteSpeciesName(t) {
-  return t && t.species ? t.species : '?';
 }
