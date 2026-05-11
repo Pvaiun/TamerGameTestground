@@ -1,0 +1,223 @@
+{
+  "_format": "Patient intents. Each has: class (speech|physical|psychic|intimacy|drift), shown name + icon, an effect block resolved by intents.js. Effects: damage (Composure to player), revealOnRead (fragments revealed if the player correctly handled it), insightToPlayerIfRead, harderHandle (overrides damage if player did not play a handling card), counters (which approach card classes correctly handle this). Voice prose is in voiceprose.json (intents[key].announce / .resolve / .handled).",
+
+  "mutter": {
+    "name": "Mutter",
+    "class": "speech",
+    "icon": "·",
+    "damage": 1,
+    "counteredBy": ["listen", "ask", "press"],
+    "insightOnCounter": 1,
+    "revealOnCounter": 1,
+    "desc": "They speak. Hear it or do not."
+  },
+  "tell_a_name": {
+    "name": "Tell a name",
+    "class": "speech",
+    "icon": "‹",
+    "damage": 2,
+    "counteredBy": ["listen", "ask", "note"],
+    "insightOnCounter": 2,
+    "revealOnCounter": 1,
+    "desc": "They name someone the file does not know. The name lands like weight."
+  },
+  "ask_for_someone": {
+    "name": "Ask for someone",
+    "class": "speech",
+    "icon": "?",
+    "damage": 2,
+    "counteredBy": ["listen", "ask"],
+    "insightOnCounter": 2,
+    "revealOnCounter": 0,
+    "desc": "They ask the room a question. Answer or take the silence."
+  },
+  "say_the_room": {
+    "name": "Say the room",
+    "class": "speech",
+    "icon": "❝",
+    "damage": 1,
+    "counteredBy": ["listen", "wait"],
+    "insightOnCounter": 2,
+    "revealCategory": true,
+    "desc": "They describe the room they are in. Not this one."
+  },
+
+  "reach": {
+    "name": "Reach across",
+    "class": "intimacy",
+    "icon": "↬",
+    "damage": 3,
+    "counteredBy": ["reflect", "hold", "step_back"],
+    "insightOnCounter": 2,
+    "revealOnCounter": 1,
+    "desc": "They reach across the desk for your hand."
+  },
+  "smile_wrong": {
+    "name": "Smile wrong",
+    "class": "intimacy",
+    "icon": "ˇ",
+    "damage": 2,
+    "counteredBy": ["reflect", "wait"],
+    "insightOnCounter": 2,
+    "revealOnCounter": 1,
+    "desc": "They smile in a way the muscles do not know."
+  },
+  "answer_in_yours": {
+    "name": "Answer in your voice",
+    "class": "intimacy",
+    "icon": "˹",
+    "damage": 2,
+    "counteredBy": ["reflect", "tell"],
+    "insightOnCounter": 3,
+    "revealOnCounter": 1,
+    "desc": "They answer the question you were about to ask. In your voice."
+  },
+  "use_your_name": {
+    "name": "Use your name",
+    "class": "intimacy",
+    "icon": "˺",
+    "damage": 2,
+    "counteredBy": ["reflect", "press"],
+    "insightOnCounter": 2,
+    "revealCategory": true,
+    "desc": "They say your name. They are not on the staff list."
+  },
+
+  "lash_out": {
+    "name": "Lash out",
+    "class": "physical",
+    "icon": "✕",
+    "damage": 4,
+    "counteredBy": ["hold", "restrain", "step_back"],
+    "insightOnCounter": 1,
+    "revealOnCounter": 1,
+    "desc": "They lunge. The desk is between you. For now."
+  },
+  "open_the_wound": {
+    "name": "Open the wound",
+    "class": "physical",
+    "icon": "◦",
+    "damage": 2,
+    "counteredBy": ["hold", "restrain"],
+    "insightOnCounter": 2,
+    "revealOnCounter": 1,
+    "addsState": "bleeding",
+    "desc": "They open something that was almost closed."
+  },
+  "convulse": {
+    "name": "Convulse",
+    "class": "physical",
+    "icon": "≈",
+    "damage": 3,
+    "counteredBy": ["restrain", "hold"],
+    "insightOnCounter": 2,
+    "revealOnCounter": 1,
+    "desc": "Their body says no in the wrong language."
+  },
+  "stand": {
+    "name": "Stand up",
+    "class": "physical",
+    "icon": "↑",
+    "damage": 3,
+    "counteredBy": ["hold", "restrain", "press"],
+    "insightOnCounter": 1,
+    "revealOnCounter": 1,
+    "desc": "They stand. They were not meant to."
+  },
+
+  "stare": {
+    "name": "Stare past you",
+    "class": "psychic",
+    "icon": "◇",
+    "damage": 2,
+    "counteredBy": ["wait", "witness", "step_back"],
+    "insightOnCounter": 2,
+    "revealOnCounter": 1,
+    "desc": "Their gaze sets on a spot of wall over your shoulder."
+  },
+  "watch_the_corner": {
+    "name": "Watch the corner",
+    "class": "psychic",
+    "icon": "◈",
+    "damage": 1,
+    "drainPages": 1,
+    "counteredBy": ["witness", "wait"],
+    "insightOnCounter": 2,
+    "revealOnCounter": 1,
+    "desc": "They will not look at the corner. They are watching it."
+  },
+  "breathe_in_time": {
+    "name": "Breathe in time",
+    "class": "psychic",
+    "icon": "○",
+    "damage": 1,
+    "counteredBy": ["witness", "wait"],
+    "insightOnCounter": 3,
+    "revealOnCounter": 0,
+    "desc": "They are breathing in time with something the room is doing."
+  },
+  "go_still": {
+    "name": "Go still",
+    "class": "psychic",
+    "icon": "·",
+    "damage": 0,
+    "counteredBy": ["witness", "wait", "note"],
+    "insightOnCounter": 2,
+    "revealCategory": true,
+    "desc": "They have stopped moving. The file did not notice when."
+  },
+
+  "drift": {
+    "name": "Drift",
+    "class": "drift",
+    "icon": "~",
+    "damage": 1,
+    "counteredBy": ["match", "note"],
+    "insightOnCounter": 1,
+    "revealOnCounter": 1,
+    "desc": "They are between things. The file cannot pin them."
+  },
+  "refuse_the_room": {
+    "name": "Refuse the room",
+    "class": "drift",
+    "icon": "✗",
+    "damage": 2,
+    "counteredBy": ["match", "press", "note"],
+    "insightOnCounter": 1,
+    "revealOnCounter": 1,
+    "hidesNextIntent": true,
+    "desc": "They refuse to be here. The next intent is hidden."
+  },
+  "speak_as_other": {
+    "name": "Speak as another",
+    "class": "drift",
+    "icon": "˙",
+    "damage": 2,
+    "counteredBy": ["match", "reflect", "listen"],
+    "insightOnCounter": 2,
+    "revealOnCounter": 1,
+    "desc": "They speak as if they were the other patient. The one who is not here."
+  },
+  "be_more": {
+    "name": "Be more than one",
+    "class": "drift",
+    "icon": "≡",
+    "damage": 3,
+    "counteredBy": ["match", "reflect"],
+    "insightOnCounter": 2,
+    "revealOnCounter": 1,
+    "desc": "They are speaking for several. The room shrinks."
+  },
+
+  "closing": {
+    "name": "Close the file",
+    "class": "drift",
+    "icon": "▮",
+    "damage": 5,
+    "counteredBy": ["press", "diagnose"],
+    "insightOnCounter": 1,
+    "revealOnCounter": 0,
+    "isFinale": true,
+    "desc": "They are closing their own file. !!Make the writing yours, or take what is left.!!"
+  }
+}

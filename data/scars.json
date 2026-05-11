@@ -1,0 +1,130 @@
+{
+  "_format": "Scars accumulate when a patient breaks your composure (Composure → 0 during an intake). Each scar persists for the rest of the run, applied at the start of every subsequent intake. 3 scars = file closes (run over). When a patient breaks you, a scar is rolled from the appropriate pool (by what kind of intent broke you). Each scar carries narrative weight and a real penalty. The `cleanse` approach suspends a scar for one intake.",
+
+  "_pools": {
+    "speech": ["the_name", "carries_quiet", "answer_you_owe"],
+    "intimacy": ["wears_my_hand", "knows_my_voice", "small_smile"],
+    "physical": ["closed_wound", "wrist_bruise", "stooped"],
+    "psychic": ["corner_behind", "third_eye_open", "draughty"],
+    "drift": ["wrong_drawer", "page_torn", "loose_signature"]
+  },
+
+  "the_name": {
+    "name": "The name",
+    "voice": "A name they gave me sits behind my eyes. It is not a name I know.",
+    "effect": "-1 Pages on the first turn of every intake.",
+    "key": "delayPages",
+    "value": 1
+  },
+  "carries_quiet": {
+    "name": "Carries quiet",
+    "voice": "I have stopped saying ~~certain~~ some words. I cannot hear them well either.",
+    "effect": "Listen costs 2 instead of 1.",
+    "key": "costMod",
+    "approach": "listen",
+    "value": 1
+  },
+  "answer_you_owe": {
+    "name": "An answer you owe",
+    "voice": "A patient is still waiting on the answer I did not give.",
+    "effect": "-2 max Composure.",
+    "key": "composureMaxMod",
+    "value": -2
+  },
+
+  "wears_my_hand": {
+    "name": "Wears my hand",
+    "voice": "There is the warmth of a hand on mine. It is mine. !!It is also not.!!",
+    "effect": "-2 max Composure.",
+    "key": "composureMaxMod",
+    "value": -2
+  },
+  "knows_my_voice": {
+    "name": "Knows my voice",
+    "voice": "Something can speak in my voice now. ~~I hear it when I sleep.~~ I do not sleep.",
+    "effect": "Reflect costs 3.",
+    "key": "costMod",
+    "approach": "reflect",
+    "value": 1
+  },
+  "small_smile": {
+    "name": "Small smile",
+    "voice": "I have caught myself smiling at the wrong moments. The mirror has been ~~moved~~ turned.",
+    "effect": "Intimacy-class intents deal +1 damage.",
+    "key": "classDmg",
+    "intentClass": "intimacy",
+    "value": 1
+  },
+
+  "closed_wound": {
+    "name": "A wound that closed wrong",
+    "voice": "It does not bleed. It does not open. It does not ~~heal~~ leave.",
+    "effect": "-2 max Composure.",
+    "key": "composureMaxMod",
+    "value": -2
+  },
+  "wrist_bruise": {
+    "name": "Wrist bruise",
+    "voice": "I held something I should not have held. The mark stayed.",
+    "effect": "Hold costs 3.",
+    "key": "costMod",
+    "approach": "hold",
+    "value": 1
+  },
+  "stooped": {
+    "name": "Stooped",
+    "voice": "I do not stand as straight. The room is shorter than I remember.",
+    "effect": "Physical-class intents deal +1 damage.",
+    "key": "classDmg",
+    "intentClass": "physical",
+    "value": 1
+  },
+
+  "corner_behind": {
+    "name": "Corner behind me",
+    "voice": "I keep checking it. The check is the trouble.",
+    "effect": "-1 Insight at the start of every intake.",
+    "key": "insightStartMod",
+    "value": -1
+  },
+  "third_eye_open": {
+    "name": "A third eye, opened",
+    "voice": "It does not close. It does not blink. The light is the trouble.",
+    "effect": "Witness costs 3.",
+    "key": "costMod",
+    "approach": "witness",
+    "value": 1
+  },
+  "draughty": {
+    "name": "Draughty",
+    "voice": "There is a draught I cannot find the source of. ~~It speaks.~~ It is the room.",
+    "effect": "Psychic-class intents deal +1 damage.",
+    "key": "classDmg",
+    "intentClass": "psychic",
+    "value": 1
+  },
+
+  "wrong_drawer": {
+    "name": "Wrong drawer",
+    "voice": "I filed something in the wrong drawer. The drawer is not in the building anymore.",
+    "effect": "Match costs 3.",
+    "key": "costMod",
+    "approach": "match",
+    "value": 1
+  },
+  "page_torn": {
+    "name": "Page torn",
+    "voice": "A page of mine is missing. !!I do not know which.!!",
+    "effect": "Pages refresh to 2 instead of 3.",
+    "key": "pagesPerTurnMod",
+    "value": -1
+  },
+  "loose_signature": {
+    "name": "Loose signature",
+    "voice": "I sign in a hand that is mostly mine. The other hand is ~~learning~~ practising.",
+    "effect": "Drift-class intents deal +1 damage.",
+    "key": "classDmg",
+    "intentClass": "drift",
+    "value": 1
+  }
+}

@@ -1,11 +1,12 @@
 {
-  "growthThresholds": [
-    { "grade": "S", "min": 2.6 },
-    { "grade": "A", "min": 2.2 },
-    { "grade": "B", "min": 1.8 },
-    { "grade": "C", "min": 1.4 },
-    { "grade": "D", "min": 1.0 },
-    { "grade": "E", "min": 0.6 },
-    { "grade": "F", "min": 0 }
-  ]
+  "_format": "Tunable constants. composureMax/initial = stability budget; insightToName = points to name a patient; pagesPerTurn = play budget per turn; intakeTurnLimit = soft cap before patient finalises the page; scarLimit = scars ending the run.",
+  "composureMax": 10,
+  "composureInitial": 10,
+  "composureHealBetweenIntakes": 3,
+  "insightToName": 5,
+  "pagesPerTurn": 3,
+  "intakeTurnLimit": 9,
+  "scarLimit": 3,
+  "totalDescents": 10,
+  "boonChoicesPerIntake": 3
 }

@@ -1,31 +1,13 @@
-// Loads game data from data/*.json. Call await loadData() once at startup.
-
-export let TYPES = [];
-export let TYPE_CHART = {};
-export let TYPE_PALETTE = {};
-export const TYPE_LABELS = {};
-export let PASSIVES = {};
-export let ABILITIES = {};
-export let STATUSES = {};
-export let ADDITIONAL_EFFECTS = {};
-export let TEMPLATES = [];
-export let ALL_ENCOUNTER_SPECIES = [];
-export const GLOBALS = { growthThresholds: [] };
-export const PASSIVE_SCHEMA = { triggers: {}, conditions: {}, effects: {} };
+export let GLOBALS = {};
+export let CATEGORIES = {};
+export let APPROACHES = {};
+export let INTENTS = {};
+export let SCARS = {};
+export let SCAR_POOLS = {};
+export let PATIENTS = [];
+export let PATIENTS_BY_SPECIES = {};
 export const GLYPHS = {};
-export let RELICS = {};
-export let ARCHETYPES = {};
-export const VOICE = {
-  subtitles: {},
-  notes: {},
-  noteAppends: {},
-  passives: {},
-  afflictions: {},
-  actions: {},
-  actionDefaults: {},
-  effectDefaults: {},
-  events: {},
-};
+export let VOICE = {};
 
 async function fetchJson(path) {
   const r = await fetch(path);
@@ -33,60 +15,40 @@ async function fetchJson(path) {
   return r.json();
 }
 
+function strip(obj) {
+  const out = {};
+  for (const [k, v] of Object.entries(obj)) if (!k.startsWith('_')) out[k] = v;
+  return out;
+}
+
 export async function loadData() {
-  const [types, passives, abilities, statuses, addEffects, templates, globals, passiveSchema, glyphs, voice, relics, archetypes] = await Promise.all([
-    fetchJson('data/types.json'),
-    fetchJson('data/passives.json'),
-    fetchJson('data/abilities.json'),
-    fetchJson('data/statuseffects.json'),
-    fetchJson('data/additionaleffects.json'),
-    fetchJson('data/templates.json'),
+  const [globals, categories, approaches, intents, scars, patients, glyphs, voice] = await Promise.all([
     fetchJson('data/globals.json'),
-    fetchJson('data/passivetriggers.json'),
+    fetchJson('data/categories.json'),
+    fetchJson('data/approaches.json'),
+    fetchJson('data/intents.json'),
+    fetchJson('data/scars.json'),
+    fetchJson('data/patients.json'),
     fetchJson('data/glyphs.json'),
     fetchJson('data/voiceprose.json'),
-    fetchJson('data/relics.json'),
-    fetchJson('data/archetypes.json'),
   ]);
-  TYPES = types.TYPES;
-  Object.assign(TYPE_CHART, types.TYPE_CHART);
-  Object.assign(TYPE_PALETTE, types.TYPE_PALETTE);
-  Object.assign(TYPE_LABELS, types.TYPE_LABELS || {});
-  // Filter out _format/_doc keys from passives + abilities + relics + archetypes
-  for (const [k, v] of Object.entries(passives)) if (!k.startsWith('_')) PASSIVES[k] = v;
-  for (const [k, v] of Object.entries(abilities)) if (!k.startsWith('_')) {
-    ABILITIES[k] = v;
-    v._key = k;
+  GLOBALS = strip(globals);
+  Object.assign(CATEGORIES, strip(categories));
+  Object.assign(APPROACHES, strip(approaches));
+  for (const [k, v] of Object.entries(APPROACHES)) v.key = k;
+  Object.assign(INTENTS, strip(intents));
+  for (const [k, v] of Object.entries(INTENTS)) v.key = k;
+  // scars: top-level keys minus _pools become SCARS; _pools becomes SCAR_POOLS
+  for (const [k, v] of Object.entries(scars)) {
+    if (k === '_format') continue;
+    if (k === '_pools') { SCAR_POOLS = v; continue; }
+    SCARS[k] = { key: k, ...v };
   }
-  Object.assign(STATUSES, statuses);
-  Object.assign(ADDITIONAL_EFFECTS, addEffects);
-  TEMPLATES.length = 0;
-  TEMPLATES.push(...templates);
-  ALL_ENCOUNTER_SPECIES.length = 0;
-  ALL_ENCOUNTER_SPECIES.push(...TEMPLATES.filter(t => !t.starter).map(t => t.species));
-  GLOBALS.growthThresholds = globals.growthThresholds || [];
-  Object.assign(PASSIVE_SCHEMA.triggers,   passiveSchema.triggers   || {});
-  Object.assign(PASSIVE_SCHEMA.conditions, passiveSchema.conditions || {});
-  Object.assign(PASSIVE_SCHEMA.effects,    passiveSchema.effects    || {});
-  for (const [k, v] of Object.entries(glyphs)) {
-    if (k.startsWith('_')) continue;
-    GLYPHS[k] = v;
+  PATIENTS.length = 0;
+  for (const p of patients) {
+    PATIENTS.push(p);
+    PATIENTS_BY_SPECIES[p.species] = p;
   }
-  for (const [k, v] of Object.entries(relics)) {
-    if (k.startsWith('_')) continue;
-    RELICS[k] = { id: k, ...v };
-  }
-  for (const [k, v] of Object.entries(archetypes)) {
-    if (k.startsWith('_')) continue;
-    ARCHETYPES[k] = { id: k, ...v };
-  }
-  Object.assign(VOICE.subtitles,      voice.subtitles      || {});
-  Object.assign(VOICE.notes,          voice.notes          || {});
-  Object.assign(VOICE.noteAppends,    voice.noteAppends    || {});
-  Object.assign(VOICE.passives,       voice.passives       || {});
-  Object.assign(VOICE.afflictions,    voice.afflictions    || {});
-  Object.assign(VOICE.actions,        voice.actions        || {});
-  Object.assign(VOICE.actionDefaults, voice.actionDefaults || {});
-  Object.assign(VOICE.effectDefaults, voice.effectDefaults || {});
-  Object.assign(VOICE.events,         voice.events         || {});
+  for (const [k, v] of Object.entries(glyphs)) if (!k.startsWith('_')) GLYPHS[k] = v;
+  VOICE = strip(voice);
 }

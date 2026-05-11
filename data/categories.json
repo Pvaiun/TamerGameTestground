@@ -1,0 +1,69 @@
+{
+  "_format": "The five wards the file recognises. Each category has a dominant intent class (the kind of intent most of its intents belong to) and a 'fit' approach (the card whose category-key matches). Playing the fit approach to a matching patient yields Insight; playing it to a mismatched patient hurts.",
+
+  "mourner": {
+    "name": "Mourner",
+    "label": "lost something specific",
+    "intentClass": "speech",
+    "fitApproach": "ask",
+    "shorthand": "M",
+    "voice": "Patient is grieving something with a name. They will ~~try~~ tell you. The file is built by listening.",
+    "tells": [
+      "they say a name without prompting",
+      "they correct staff on a date",
+      "they ask after someone not on file"
+    ]
+  },
+  "visitor": {
+    "name": "Visitor",
+    "label": "came back wrong",
+    "intentClass": "intimacy",
+    "fitApproach": "reflect",
+    "shorthand": "V",
+    "voice": "Patient is not where they should be. They are trying to wear the room. The file is built by ~~mimicking~~ mirroring.",
+    "tells": [
+      "they reach across the desk",
+      "they answer in your voice",
+      "they ask after themselves in the third person"
+    ]
+  },
+  "tenant": {
+    "name": "Tenant",
+    "label": "brought something with them",
+    "intentClass": "physical",
+    "fitApproach": "hold",
+    "shorthand": "T",
+    "voice": "Patient is hosting a thing the file does not name. !!It does not want to be filed.!! The file is built by restraining.",
+    "tells": [
+      "they flinch at the wrong moments",
+      "the wound is older than admission",
+      "they speak in a different rhythm sometimes"
+    ]
+  },
+  "witness": {
+    "name": "Witness",
+    "label": "saw something",
+    "intentClass": "psychic",
+    "fitApproach": "wait",
+    "shorthand": "W",
+    "voice": "Patient has seen a room you have not. They will not tell. The file is built by ~~waiting~~ sitting with them.",
+    "tells": [
+      "they will not look at the corner",
+      "they answer questions you have not asked",
+      "they have been still longer than is recorded"
+    ]
+  },
+  "stranger": {
+    "name": "Stranger",
+    "label": "the file does not yet know",
+    "intentClass": "drift",
+    "fitApproach": "match",
+    "shorthand": "S",
+    "voice": "Patient is ~~not yet~~ between categories. They may settle. The file is built by ~~guessing~~ matching.",
+    "tells": [
+      "their intents are unpredictable",
+      "the file is mostly blank",
+      "staff disagree on the ward"
+    ]
+  }
+}

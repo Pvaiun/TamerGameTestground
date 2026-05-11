@@ -1,0 +1,427 @@
+[
+  {
+    "species": "Lumenpup",
+    "category": "stranger",
+    "tier": 0,
+    "name": "[Patient 0413]",
+    "intents": ["drift", "go_still", "watch_the_corner", "mutter", "refuse_the_room"],
+    "fragments": [
+      "Arrived at the front entrance unaccompanied. No identification provided.",
+      "Vitals normal. Responds to questions. !!Does not remember the address.!!",
+      "Settled in room without resistance.",
+      "Has begun to read other patients' files."
+    ],
+    "subtitle": "Admitted [[8]] · file open"
+  },
+
+  {
+    "species": "Pyrelord",
+    "category": "tenant",
+    "tier": 2,
+    "name": "[Father, present]",
+    "intents": ["stand", "lash_out", "tell_a_name", "open_the_wound"],
+    "fragments": [
+      "Subject occupies the room as if it remains his.",
+      "Family report he has been deceased since ~~1986~~ longer.",
+      "Daughters visit. He **knows their names**.",
+      "He addresses the chair across from him. The chair is empty."
+    ],
+    "subtitle": "He still presides."
+  },
+  {
+    "species": "Ashmaw",
+    "category": "tenant",
+    "tier": 2,
+    "name": "[Still hungry]",
+    "intents": ["open_the_wound", "convulse", "lash_out", "stare"],
+    "fragments": [
+      "Subject has consumed everything offered. She continues to ask.",
+      "Found chewing on the bedframe. ~~Iron filings~~ flecks recovered from her mouth.",
+      "Asked when she was last full. !!She does not remember being.!!",
+      "Has begun on the walls of the day room."
+    ],
+    "subtitle": "She has not stopped eating since admission."
+  },
+  {
+    "species": "Cinderling",
+    "category": "mourner",
+    "tier": 1,
+    "name": "[Only one home]",
+    "intents": ["tell_a_name", "mutter", "ask_for_someone", "say_the_room"],
+    "fragments": [
+      "Subject was located on the porch. Smoke damage minor.",
+      "Patient was eight. The rest of the family was indoors.",
+      "Refers to her brother in present tense. ~~**I** answer when she calls.~~",
+      "She has been describing the bedroom upstairs to staff."
+    ],
+    "subtitle": "The rest of the family was indoors."
+  },
+  {
+    "species": "Charnel",
+    "category": "stranger",
+    "tier": 3,
+    "name": "[Walked here from [[6]]]",
+    "intents": ["drift", "speak_as_other", "be_more", "open_the_wound", "say_the_room"],
+    "fragments": [
+      "Subject was observed approaching the entrance for [[3]] days.",
+      "She walked the length of the road. The road is not paved.",
+      "Has not sat down since admission. ~~Refuses.~~ Cannot.",
+      "Other patients refer to her as the one they came in with."
+    ],
+    "subtitle": "She did not stop when staff approached."
+  },
+  {
+    "species": "Magmaw",
+    "category": "witness",
+    "tier": 2,
+    "name": "[Door he opened]",
+    "intents": ["watch_the_corner", "go_still", "stare", "breathe_in_time"],
+    "fragments": [
+      "Subject sits with one ear toward the corridor.",
+      "Patient was a property surveyor. He insists the door was already open.",
+      "Asked what was beyond. ~~He described it.~~ The page is missing.",
+      "He has begun to listen to the staff lounge through the wall."
+    ],
+    "subtitle": "He says it was already open."
+  },
+  {
+    "species": "Soothlick",
+    "category": "visitor",
+    "tier": 3,
+    "name": "[Tucks them in at night]",
+    "intents": ["reach", "smile_wrong", "answer_in_yours", "mutter", "use_your_name"],
+    "fragments": [
+      "Patient was a night nurse for ~~thirty~~ thirty-eight years.",
+      "Found in other patients' rooms after lights-out. She does not turn the door handle.",
+      "Patients she has tended report **sleeping better**. They do not wake all the way.",
+      "Has been seen at staff handover. She is not on the roster."
+    ],
+    "subtitle": "Other patients have stopped reporting it."
+  },
+
+  {
+    "species": "Tidewhelp",
+    "category": "visitor",
+    "tier": 1,
+    "name": "[Brother came back wrong]",
+    "intents": ["answer_in_yours", "reach", "use_your_name", "mutter"],
+    "fragments": [
+      "Subject was returned to family after [[5]] missing.",
+      "The brother says it is him. The brother is sure.",
+      "Does not eat what the family eats. ~~Will not.~~ Does not appear to need to.",
+      "Answers to the brother's name. !!Answers also to his own.!!"
+    ],
+    "subtitle": "His brother insists it is him."
+  },
+  {
+    "species": "Rivergeist",
+    "category": "mourner",
+    "tier": 2,
+    "name": "[Keeps leaving]",
+    "intents": ["drift", "ask_for_someone", "mutter", "say_the_room"],
+    "fragments": [
+      "Patient has attempted to leave the ward seventeen times this week.",
+      "Each attempt ends in the east hallway. She does not remember the others.",
+      "Asked where she was going. Answered: !!the same place she came from.!!",
+      "She tells staff her destination differently each time."
+    ],
+    "subtitle": "She is found in the same hallway each time."
+  },
+  {
+    "species": "Brineback",
+    "category": "tenant",
+    "tier": 3,
+    "name": "[Husband kept her]",
+    "intents": ["convulse", "open_the_wound", "stand", "lash_out"],
+    "fragments": [
+      "Subject was wrapped in linens when delivered to admissions.",
+      "Patient's husband brought it in. He has been here since.",
+      "He asks after it daily. We tell him she is ~~comfortable~~ kept.",
+      "Staff have been instructed not to remove the binding."
+    ],
+    "subtitle": "He brought it in himself. We took it from him."
+  },
+  {
+    "species": "Mireling",
+    "category": "mourner",
+    "tier": 2,
+    "name": "[Asks about the pond]",
+    "intents": ["ask_for_someone", "tell_a_name", "mutter", "drift"],
+    "fragments": [
+      "Patient asks staff about the pond on the grounds. There is no pond.",
+      "She specifies a ~~stone~~ statue at the edge. None on file.",
+      "Family report she put **something** in a pond, once. They will not say what.",
+      "She names the something. Each time differently."
+    ],
+    "subtitle": "There is no pond on the grounds."
+  },
+  {
+    "species": "Coralhusk",
+    "category": "witness",
+    "tier": 3,
+    "name": "[Shell that answers]",
+    "intents": ["go_still", "stare", "breathe_in_time", "watch_the_corner"],
+    "fragments": [
+      "Subject responds when called by her given name.",
+      "No further verbal output observed in [[3]] months.",
+      "Family ask if she is still in there. We **say yes**.",
+      "She has begun to answer questions staff have not yet asked."
+    ],
+    "subtitle": "She responds to her name. Nothing else."
+  },
+  {
+    "species": "Frostfin",
+    "category": "mourner",
+    "tier": 1,
+    "name": "[Froze waiting]",
+    "intents": ["ask_for_someone", "tell_a_name", "mutter", "go_still"],
+    "fragments": [
+      "Patient was located on the bench outside the train station.",
+      "She had been there since her ~~husband~~ son said he would come.",
+      "Her hands have not warmed since. **Staff do not hold them long.**",
+      "She still checks her watch."
+    ],
+    "subtitle": "She was found on the bench after."
+  },
+  {
+    "species": "Deepmaw",
+    "category": "tenant",
+    "tier": 4,
+    "name": "[What the basement is for]",
+    "intents": ["convulse", "stand", "lash_out", "open_the_wound", "stare"],
+    "fragments": [
+      "Subject is housed below the main wards by request. Not hers.",
+      "Staff entering the lower level are required to ~~sign out~~ pair up.",
+      "She has not been observed eating. The orderlies are losing weight.",
+      "She has stopped asking to come up. !!Staff have not stopped asking her to.!!"
+    ],
+    "subtitle": "Staff are reminded not to go down."
+  },
+
+  {
+    "species": "Loamback",
+    "category": "stranger",
+    "tier": 1,
+    "name": "[On the waiting list]",
+    "intents": ["drift", "refuse_the_room", "mutter", "go_still"],
+    "fragments": [
+      "Patient has been awaiting transfer to [[7]] since 1981.",
+      "She does not ask after it. She knows the number she is.",
+      "When called by another's name, she ~~corrects~~ accepts it.",
+      "Has begun to refer to herself by the number of the room next door."
+    ],
+    "subtitle": "She has been waiting since 1981."
+  },
+  {
+    "species": "Sproutkin",
+    "category": "tenant",
+    "tier": 2,
+    "name": "[Keeps opening it]",
+    "intents": ["open_the_wound", "mutter", "smile_wrong", "convulse"],
+    "fragments": [
+      "Subject has reopened the same wound eleven times.",
+      "The bandage is replaced daily. She thanks staff. She **cannot help.**",
+      "When asked why, she answered: ~~it is healing wrong~~ it is healing.",
+      "Something is taking up residence in the opening."
+    ],
+    "subtitle": "Staff have stopped re-stitching."
+  },
+  {
+    "species": "Mosshorn",
+    "category": "witness",
+    "tier": 4,
+    "name": "[Moved overnight]",
+    "intents": ["go_still", "watch_the_corner", "stare", "breathe_in_time", "stand"],
+    "fragments": [
+      "Patient has not initiated movement since 1972.",
+      "Subject was in bed at 22:00. Subject was at the window at 06:00.",
+      "Staff present that night ~~do not~~ will not say.",
+      "The window faces the staff parking. Several have moved house."
+    ],
+    "subtitle": "He has been still since 1972."
+  },
+  {
+    "species": "Vinewyrm",
+    "category": "stranger",
+    "tier": 3,
+    "name": "[Crawled the length of the hall]",
+    "intents": ["refuse_the_room", "drift", "stand", "speak_as_other"],
+    "fragments": [
+      "Subject is fully ambulatory. Refuses to walk.",
+      "Patient was found in the south corridor. She had crawled from the east. **It took the night.**",
+      "When stood up by orderlies, she ~~sits~~ lowers herself.",
+      "Other patients have begun to do the same."
+    ],
+    "subtitle": "She refuses to use the legs."
+  },
+  {
+    "species": "Bloomback",
+    "category": "tenant",
+    "tier": 3,
+    "name": "[Garden in him]",
+    "intents": ["open_the_wound", "smile_wrong", "tell_a_name", "convulse"],
+    "fragments": [
+      "Subject is observed cultivating something within the wound.",
+      "He prunes it. He calls it by !!plant names!!.",
+      "Smells of [[8]] when the room is closed.",
+      "He has begun to ask for water for it."
+    ],
+    "subtitle": "He says it is **growing in nicely**."
+  },
+  {
+    "species": "Thornling",
+    "category": "tenant",
+    "tier": 1,
+    "name": "[Do not reach in]",
+    "intents": ["lash_out", "convulse", "open_the_wound"],
+    "fragments": [
+      "Patient is small. She is mostly compliant.",
+      "Three orderlies have lost ~~fingers~~ partial use of the right hand.",
+      "She apologizes after. !!It does not appear to help her.!!",
+      "The compliance is part of the trouble."
+    ],
+    "subtitle": "Three orderlies. So far."
+  },
+  {
+    "species": "Hollowoak",
+    "category": "mourner",
+    "tier": 4,
+    "name": "[Cannot remember names]",
+    "intents": ["ask_for_someone", "tell_a_name", "mutter", "drift", "refuse_the_room"],
+    "fragments": [
+      "Patient cannot recall the name of ~~her daughter~~ the one she came in with.",
+      "She has been told the room next door is empty. She continues to thank the staff for *the visits*.",
+      "When asked her own name, she gave the orderly's. ~~**I** told her it was hers.~~",
+      "She has begun to know whose names not to say."
+    ],
+    "subtitle": "She is sure she had a daughter."
+  },
+
+  {
+    "species": "Aurabeast",
+    "category": "stranger",
+    "tier": 3,
+    "name": "[Took the notes]",
+    "intents": ["speak_as_other", "drift", "use_your_name", "answer_in_yours"],
+    "fragments": [
+      "Patient was a records clerk for thirty-one years.",
+      "He continues to take notes. The page is blank.",
+      "Staff have begun to !!find their words!! in his hand.",
+      "Several of his pages are missing. They are in other files."
+    ],
+    "subtitle": "He used to work in records."
+  },
+  {
+    "species": "Dawnstag",
+    "category": "mourner",
+    "tier": 3,
+    "name": "[Firstborn]",
+    "intents": ["ask_for_someone", "tell_a_name", "say_the_room", "stand"],
+    "fragments": [
+      "Patient is the eldest of [[3]].",
+      "His mother is housed two doors down. She does not know him.",
+      "He was named after his ~~grandfather~~ uncle. The uncle is also here.",
+      "He has begun to introduce himself by his brother's name."
+    ],
+    "subtitle": "His mother is also here."
+  },
+  {
+    "species": "Halowyrm",
+    "category": "witness",
+    "tier": 1,
+    "name": "[Shines through her gown]",
+    "intents": ["stare", "breathe_in_time", "watch_the_corner", "go_still"],
+    "fragments": [
+      "Subject emits visible light from the chest cavity.",
+      "Lights in her ward are kept dim. ~~For her~~ for the staff.",
+      "Family ask what is in there. We have **not** said.",
+      "She has begun to read by it."
+    ],
+    "subtitle": "Staff use less light in her ward."
+  },
+  {
+    "species": "Glimmerfox",
+    "category": "mourner",
+    "tier": 2,
+    "name": "[Dog that did not]",
+    "intents": ["ask_for_someone", "tell_a_name", "stare", "mutter"],
+    "fragments": [
+      "Patient was eight when it ran into the road.",
+      "He watched. The rest of the family looked away. He ~~has not~~ cannot stop.",
+      "Subject sits at his feet. He pets it. **It has been forty years.**",
+      "It has begun to follow him out of the room."
+    ],
+    "subtitle": "He was eight. He doesn't blink."
+  },
+
+  {
+    "species": "Shadowmaw",
+    "category": "visitor",
+    "tier": 3,
+    "name": "[Heard us]",
+    "intents": ["use_your_name", "answer_in_yours", "speak_as_other", "smile_wrong"],
+    "fragments": [
+      "Patient occupies the room nearest the staff lounge.",
+      "He has begun returning to staff what they spoke of yesterday.",
+      "He uses our names. !!We are not sure when he learned them.!!",
+      "Two staff have transferred. One has not arrived at the new ward."
+    ],
+    "subtitle": "He has been quoting us back."
+  },
+  {
+    "species": "Voidling",
+    "category": "tenant",
+    "tier": 4,
+    "name": "[Thing in the closet]",
+    "intents": ["open_the_wound", "convulse", "lash_out", "smile_wrong", "stand"],
+    "fragments": [
+      "Patient sealed it in his bedroom closet for thirty-six years.",
+      "At admission it was smaller than a fist. !!It has grown since.!!",
+      "He calls it by ~~his wife's~~ the name they would have given.",
+      "He no longer asks staff to keep it in the closet. !!The closet is here.!!"
+    ],
+    "subtitle": "He kept it. Quiet. Mostly."
+  },
+  {
+    "species": "Nightcreep",
+    "category": "stranger",
+    "tier": 3,
+    "name": "[Arrived after [[6]]]",
+    "intents": ["drift", "refuse_the_room", "be_more", "speak_as_other"],
+    "fragments": [
+      "Subject was logged at the front desk after hours.",
+      "Whoever brought her did not sign in. They left her in the chair.",
+      "She refuses to identify them. ~~Or cannot.~~ The chair is !!still warm!!.",
+      "She has begun to sign in for herself. The handwriting is the orderly's."
+    ],
+    "subtitle": "Whoever brought her did not sign in."
+  },
+  {
+    "species": "Wraithfin",
+    "category": "visitor",
+    "tier": 3,
+    "name": "[Surviving twin]",
+    "intents": ["use_your_name", "answer_in_yours", "tell_a_name", "speak_as_other"],
+    "fragments": [
+      "Patient was admitted alone. She insists she is the other one.",
+      "Her sister's death certificate is on file. ~~Her~~ the patient's signature is on it.",
+      "When asked who she is, she answers her sister's name. !!Each time. The same.!!",
+      "Staff have begun to greet her as the sister."
+    ],
+    "subtitle": "She insists she is the other one."
+  },
+  {
+    "species": "Umbragale",
+    "category": "witness",
+    "tier": 4,
+    "name": "[House that visits her]",
+    "intents": ["watch_the_corner", "stare", "go_still", "breathe_in_time", "be_more"],
+    "fragments": [
+      "Patient draws the same house every morning. Same windows. Same number on the door.",
+      "She insists it ~~comes~~ has come for her.",
+      "The address she gave matches no facility on record. The house !!is at the address!!.",
+      "Other patients have begun to mention the house. They have not seen her drawings."
+    ],
+    "subtitle": "She draws it on the wall every morning."
+  }
+]

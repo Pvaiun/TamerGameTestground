@@ -1,0 +1,199 @@
+{
+  "_format": "Approach cards (the verbs the protagonist uses). Each: name, cost (pages), category? (the matching ward), tags (classes this approach 'handles'), kind (handler dispatch), params (kind-specific), desc, voice. Handler kinds resolved in src/approaches.js. The patient's intent has counteredBy listing approach keys; playing a listed key handles it and earns Insight.",
+
+  "listen": {
+    "name": "Listen",
+    "cost": 1,
+    "tags": ["handle"],
+    "kind": "listen",
+    "desc": "If their intent is speech, gain +1 Insight when they resolve.",
+    "voice": "I hold the pen still. I let them say it."
+  },
+  "note": {
+    "name": "Note",
+    "cost": 1,
+    "tags": ["handle", "reveal"],
+    "kind": "note",
+    "desc": "Reveal a hidden file fragment. +1 Insight first time per intake.",
+    "voice": "I write what is here. The page accepts it."
+  },
+  "press": {
+    "name": "Press",
+    "cost": 2,
+    "tags": ["handle"],
+    "kind": "press",
+    "desc": "Delay their intent one turn. They lash next, but speech finishes.",
+    "voice": "I do not let the silence answer for them."
+  },
+  "step_back": {
+    "name": "Step back",
+    "cost": 1,
+    "tags": ["handle"],
+    "kind": "step_back",
+    "desc": "-2 Composure damage this turn. Adds nothing else.",
+    "voice": "I move the chair back. The desk is still between us."
+  },
+  "wait": {
+    "name": "Wait",
+    "cost": 0,
+    "tags": ["handle"],
+    "kind": "wait",
+    "desc": "End your turn. +1 Insight if they are Witness-class.",
+    "voice": "I sit. The room does what it does."
+  },
+
+  "ask": {
+    "name": "Ask",
+    "cost": 2,
+    "category": "mourner",
+    "tags": ["handle"],
+    "kind": "category_pull",
+    "params": { "matchInsight": 3, "matchReveal": 1, "missDamage": 2 },
+    "desc": "If Mourner: +3 Insight and reveal a fragment. Otherwise: -2 Composure (they bristle).",
+    "voice": "I ask who they were waiting for."
+  },
+  "reflect": {
+    "name": "Reflect",
+    "cost": 2,
+    "category": "visitor",
+    "tags": ["handle"],
+    "kind": "category_pull",
+    "params": { "matchInsight": 3, "matchReveal": 1, "missDamage": 2 },
+    "desc": "If Visitor: +3 Insight and reveal a fragment. Otherwise: -2 Composure (they reject the mirror).",
+    "voice": "I do what they did. The room ~~learns~~ remembers."
+  },
+  "hold": {
+    "name": "Hold",
+    "cost": 2,
+    "category": "tenant",
+    "tags": ["handle"],
+    "kind": "category_pull",
+    "params": { "matchInsight": 3, "matchReveal": 1, "missDamage": 1, "blocksClass": "physical" },
+    "desc": "Block one physical intent. If Tenant: +3 Insight and reveal a fragment.",
+    "voice": "I keep my hand on the wrist. The wrist remembers."
+  },
+  "witness": {
+    "name": "Witness",
+    "cost": 2,
+    "category": "witness",
+    "tags": ["handle"],
+    "kind": "category_pull",
+    "params": { "matchInsight": 3, "matchReveal": 1, "missDamage": 0, "missComposure": 1, "blocksClass": "psychic" },
+    "desc": "Sit with them. If Witness: +3 Insight and reveal a fragment. Otherwise: +1 Composure.",
+    "voice": "I do not look at the corner. I look at them."
+  },
+  "match": {
+    "name": "Match",
+    "cost": 2,
+    "category": "stranger",
+    "tags": ["handle", "reveal"],
+    "kind": "match",
+    "desc": "Reveal their category. If Stranger: +3 Insight.",
+    "voice": "I find the rhythm. I keep ~~time~~ pace with it."
+  },
+
+  "tell": {
+    "name": "Tell",
+    "cost": 2,
+    "tags": ["reveal", "handle"],
+    "kind": "tell",
+    "desc": "Read your own file to them. Reveal a fragment of yours. +2 Insight if they answer.",
+    "voice": "I read them !!my!! page. They listen as if it were theirs."
+  },
+  "restrain": {
+    "name": "Restrain",
+    "cost": 2,
+    "tags": ["handle"],
+    "kind": "restrain",
+    "desc": "Block physical intents for 2 turns.",
+    "voice": "I move quickly. They do not resist as much as they should."
+  },
+  "sedate": {
+    "name": "Sedate",
+    "cost": 3,
+    "tags": [],
+    "kind": "sedate",
+    "desc": "Patient skips their next 2 intents. -1 Insight (they reveal nothing while quiet).",
+    "voice": "The dose is small. !!Smaller than I am used to.!!"
+  },
+  "mirror": {
+    "name": "Mirror",
+    "cost": 2,
+    "tags": ["handle"],
+    "kind": "mirror",
+    "desc": "Copy their last intent back. If they had no last, they take their next turn now.",
+    "voice": "I do what they did. They do not know how to receive it."
+  },
+  "pry": {
+    "name": "Pry",
+    "cost": 3,
+    "tags": ["reveal", "handle"],
+    "kind": "pry",
+    "desc": "Reveal 2 fragments. They lash next regardless.",
+    "voice": "I read between the lines. The page tears a little."
+  },
+  "linger": {
+    "name": "Linger",
+    "cost": 1,
+    "tags": [],
+    "kind": "linger",
+    "desc": "+2 Pages next turn. End your turn.",
+    "voice": "I stay. The minute hand does the work."
+  },
+  "mark": {
+    "name": "Mark",
+    "cost": 1,
+    "tags": ["reveal"],
+    "kind": "mark",
+    "desc": "Write their name in the wrong place. +2 Insight, -1 Composure.",
+    "voice": "I sign their file with !!a name I do not know is theirs.!!"
+  },
+  "cleanse": {
+    "name": "Cleanse",
+    "cost": 2,
+    "tags": [],
+    "kind": "cleanse",
+    "desc": "Suspend one of your scars for this intake.",
+    "voice": "I wash my hands. The water is the room's."
+  },
+  "lean_in": {
+    "name": "Lean in",
+    "cost": 3,
+    "tags": ["handle"],
+    "kind": "lean_in",
+    "desc": "Take their next intent at full damage. +4 Insight regardless of category.",
+    "voice": "I let them. I take it. !!I write it down.!!"
+  },
+  "refuse": {
+    "name": "Refuse",
+    "cost": 2,
+    "tags": ["handle"],
+    "kind": "refuse",
+    "desc": "Skip their next intent entirely. -1 Insight.",
+    "voice": "I close the file early. The room ~~objects~~ adjusts."
+  },
+  "document": {
+    "name": "Document",
+    "cost": 1,
+    "tags": ["reveal"],
+    "kind": "document",
+    "desc": "Reveal a fragment. If you already revealed all, +1 Insight.",
+    "voice": "I write down what is observed. The pen moves first."
+  },
+  "diagnose": {
+    "name": "Diagnose",
+    "cost": 3,
+    "tags": [],
+    "kind": "diagnose",
+    "desc": "Name their ward. Right → +3 Insight. Wrong → -4 Composure.",
+    "voice": "I write the ward across the top of the page. !!In ink.!!"
+  },
+  "name_them": {
+    "name": "Name them",
+    "cost": 2,
+    "tags": [],
+    "kind": "name_them",
+    "desc": "Only when Insight is full. End the intake. File the patient.",
+    "voice": "I close the file. The page is theirs now."
+  }
+}
